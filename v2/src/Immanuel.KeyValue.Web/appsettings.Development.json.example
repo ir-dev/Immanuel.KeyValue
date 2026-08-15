@@ -15,6 +15,23 @@
     "AutoCreateUnknownAppKeys": false
   },
 
+  "Auth": {
+    "//": "With no SMTP host, every sign-in accepts MasterOtp. RevealMasterOtp puts it in the",
+    "//_": "sign-in response so the console can fill it in - convenient locally, never in production.",
+    "MasterOtp": "424242",
+    "RevealMasterOtp": true,
+
+    "//Smtp": "Fill this in to send real codes. This file is git-ignored, which is where a relay password belongs.",
+    "Smtp": {
+      "Host": "",
+      "Port": 587,
+      "UseSsl": true,
+      "UserName": "",
+      "Password": "",
+      "FromAddress": "keyvalue@example.com"
+    }
+  },
+
   "RateLimit": {
     "//": "Usually worth turning off while developing.",
     "Enabled": false

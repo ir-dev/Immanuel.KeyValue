@@ -1,4 +1,5 @@
 using Immanuel.KeyValue.Core;
+using Immanuel.KeyValue.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Immanuel.KeyValue.Web.Controllers;
@@ -14,18 +15,22 @@ namespace Immanuel.KeyValue.Web.Controllers;
 /// existing callers match either way.
 ///
 /// New code should prefer <see cref="StoreController"/> under /api/v2.
+///
+/// Accounts changed nothing here. A key issued anonymously stays open to whoever holds it, which
+/// is every key this API ever handed out; only keys issued to a signed-up account need that
+/// account's header, and no v1 caller has one of those.
 /// </summary>
 [ApiController]
 [Route("api/KeyVal")]
 [Produces("application/json")]
-public sealed class KeyValController(KeyValueStore store) : ControllerBase
+public sealed class KeyValController(KeyValueStore store, CallerContext caller) : ControllerBase
 {
     /// <summary>Issues a new 8-character app key.</summary>
     [HttpGet("GetAppKey")]
     public async Task<IActionResult> GetAppKey()
     {
         var appKey = await store.CreateAppKeyAsync(
-            ClientInfo.IpAddress(HttpContext), ClientInfo.UserAgent(HttpContext));
+            ClientInfo.IpAddress(HttpContext), ClientInfo.UserAgent(HttpContext), caller.Account);
 
         return new JsonResult(appKey);
     }
@@ -42,6 +47,8 @@ public sealed class KeyValController(KeyValueStore store) : ControllerBase
     [HttpGet("GetValue/{appkey}/{key}")]
     public async Task<IActionResult> GetValue(string appkey, string key)
     {
+        if (Denied(appkey) is { } denied) return denied;
+
         var value = await store.GetValueAsync(appkey, key);
         return new JsonResult(value ?? "");
     }
@@ -55,6 +62,8 @@ public sealed class KeyValController(KeyValueStore store) : ControllerBase
     [HttpPost("UpdateValue/{appkey}/{key}/{value}")]
     public async Task<IActionResult> UpdateValue(string appkey, string key, string? value = null)
     {
+        if (Denied(appkey) is { } denied) return denied;
+
         var result = await store.SetValueAsync(
             appkey, key, value, ClientInfo.IpAddress(HttpContext), ClientInfo.UserAgent(HttpContext));
 
@@ -70,6 +79,8 @@ public sealed class KeyValController(KeyValueStore store) : ControllerBase
     [HttpPost("ActOnValue/{appkey}/{key}/{value}")]
     public async Task<IActionResult> ActOnValue(string appkey, string key, string value)
     {
+        if (Denied(appkey) is { } denied) return denied;
+
         var by = value?.Trim().ToLowerInvariant() switch
         {
             "increment" => 1L,
@@ -99,6 +110,8 @@ public sealed class KeyValController(KeyValueStore store) : ControllerBase
     /// <summary>Echoes the caller's IP address, as seen by the server.</summary>
     [HttpGet("GetIp")]
     public IActionResult GetIp() => new JsonResult(ClientInfo.IpAddress(HttpContext) ?? "");
+
+    private IActionResult? Denied(string appKey) => this.Denied(store, caller, appKey);
 
     private IActionResult Failure(StoreStatus status, string appKey, string key) => status switch
     {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Free Online Key-Value Store | A persistent key-value store | Immanuel</title>
 
-<meta name="description" content="A free, persistent key-value store you can call over HTTP. No sign-up, no API keys to manage - grab an app key and start storing values.">
+<meta name="description" content="A free, persistent key-value store you can call over HTTP. Start anonymously in one request, or sign up with your email to get a private folder, named app keys and an API header of your own.">
 <meta name="keywords" content="key value pair, app settings, online store, online key value pair, free online, REST, API">
 <meta name="robots" content="index, follow">
 <meta name="rating" content="General">
@@ -32,6 +32,8 @@
   --code-text: #e6f2f2;
   --ok: #1a7f4b;
   --err: #b3261e;
+  --warn: #8a5a00;
+  --warn-soft: #fdf3dc;
   --radius: 12px;
   --shadow: 0 1px 2px rgba(23,40,44,.06), 0 4px 16px rgba(23,40,44,.06);
 }
@@ -51,6 +53,8 @@
     --code-text: #d7e9ea;
     --ok: #4ade80;
     --err: #ff8a80;
+    --warn: #f5c451;
+    --warn-soft: #2c2412;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
   }
 }
@@ -65,9 +69,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-code, pre, input, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+code, pre, input, select, textarea, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+[hidden] { display: none !important; }
 
 /* ---------- header ---------- */
 header {
@@ -77,7 +82,7 @@ header {
   text-align: center;
 }
 header h1 { margin: 0 0 10px; font-size: clamp(1.8rem, 4.5vw, 2.7rem); letter-spacing: -.02em; }
-header p { margin: 0 auto; max-width: 40rem; font-size: clamp(1rem, 2.2vw, 1.15rem); opacity: .95; }
+header p { margin: 0 auto; max-width: 42rem; font-size: clamp(1rem, 2.2vw, 1.15rem); opacity: .95; }
 
 .stats { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
 .stat {
@@ -90,14 +95,23 @@ header p { margin: 0 auto; max-width: 40rem; font-size: clamp(1rem, 2.2vw, 1.15r
 .stat .n { display: block; font-size: 1.6rem; font-weight: 650; font-variant-numeric: tabular-nums; }
 .stat .l { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; opacity: .9; }
 
+.jump { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.jump a {
+  color: #fff; text-decoration: none;
+  border: 1px solid rgba(255,255,255,.4); border-radius: 999px;
+  padding: 7px 16px; font-size: .87rem; font-weight: 600;
+}
+.jump a:hover { background: rgba(255,255,255,.16); }
+
 /* ---------- layout ---------- */
-section { padding: 48px 0; }
+section { padding: 48px 0; scroll-margin-top: 12px; }
 section + section { border-top: 1px solid var(--border); }
 h2 { font-size: 1.5rem; margin: 0 0 6px; letter-spacing: -.01em; }
 h3 { font-size: 1.05rem; margin: 0 0 10px; }
 .lead { color: var(--text-muted); margin: 0 0 28px; }
 
 .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid.two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 
 .card {
   background: var(--surface);
@@ -106,6 +120,7 @@ h3 { font-size: 1.05rem; margin: 0 0 10px; }
   padding: 22px;
   box-shadow: var(--shadow);
 }
+.card + .card { margin-top: 20px; }
 .card h3 { display: flex; align-items: center; gap: 10px; }
 .step {
   display: inline-grid; place-items: center;
@@ -137,13 +152,16 @@ h3 { font-size: 1.05rem; margin: 0 0 10px; }
 .copy:hover { background: rgba(255,255,255,.2); }
 .copy.done { background: var(--ok); border-color: var(--ok); color: #fff; }
 .note { color: var(--text-muted); font-size: .87rem; margin: 10px 0 0; }
+.note.tight { margin-top: 4px; }
 
-/* ---------- console ---------- */
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+/* ---------- forms ---------- */
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+.row:last-child { margin-bottom: 0; }
 label { font-size: .8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px; }
-.field { flex: 1 1 130px; min-width: 0; }
+.field { flex: 1 1 150px; min-width: 0; }
+.field.wide { flex: 2 1 280px; }
 
-input {
+input, select, textarea {
   width: 100%;
   padding: 9px 11px;
   border: 1px solid var(--border);
@@ -152,7 +170,9 @@ input {
   color: var(--text);
   font-size: .9rem;
 }
-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+input:disabled, select:disabled { opacity: .6; }
 
 button {
   padding: 9px 16px;
@@ -168,7 +188,18 @@ button:hover { background: var(--accent-strong); }
 button:disabled { opacity: .55; cursor: not-allowed; }
 button.ghost { background: transparent; color: var(--accent); border-color: var(--border); }
 button.ghost:hover { background: var(--accent-soft); }
+button.link {
+  background: none; border: none; color: var(--accent);
+  padding: 0; font-size: .87rem; text-decoration: underline; font-weight: 600;
+}
+button.link:hover { background: none; color: var(--accent-strong); }
+button.danger { background: transparent; color: var(--err); border-color: var(--border); }
+button.danger:hover { background: transparent; border-color: var(--err); }
 
+.checkbox { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--text-muted); }
+.checkbox input { width: auto; }
+
+/* ---------- output ---------- */
 .out {
   background: var(--code-bg); color: var(--code-text);
   border-radius: 9px; padding: 13px;
@@ -178,7 +209,16 @@ button.ghost:hover { background: var(--accent-soft); }
 .out .ok { color: var(--ok); }
 .out .err { color: var(--err); }
 
-/* ---------- reference table ---------- */
+.banner {
+  border-radius: 9px; padding: 11px 14px; font-size: .87rem;
+  border: 1px solid var(--border); background: var(--surface-alt);
+  margin-bottom: 14px;
+}
+.banner.ok { border-color: var(--ok); color: var(--ok); background: transparent; }
+.banner.err { border-color: var(--err); color: var(--err); background: transparent; }
+.banner.warn { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+
+/* ---------- tables ---------- */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .87rem; }
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -190,6 +230,11 @@ td.mono { font-size: .82rem; }
   font-size: .7rem; font-weight: 700; letter-spacing: .04em;
   background: var(--accent-soft); color: var(--accent-strong);
 }
+
+/* app key list */
+table.keys { min-width: 0; }
+table.keys td { vertical-align: middle; }
+table.keys .empty { color: var(--text-muted); font-style: italic; }
 
 footer {
   padding: 32px 0 44px;
@@ -205,6 +250,14 @@ footer a { color: var(--accent); }
   background: var(--accent-soft); color: var(--accent-strong);
   font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
 }
+.pill.muted { background: var(--surface-alt); color: var(--text-muted); }
+
+.who {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.who .email { font-weight: 650; }
+.who .folder { color: var(--text-muted); font-size: .85rem; }
 </style>
 </head>
 <body>
@@ -212,24 +265,273 @@ footer a { color: var(--accent); }
 <header>
   <div class="wrap">
     <h1>Free Online Key-Value Store</h1>
-    <p>Store a value, read it back from anywhere. No sign-up, no billing, no SDK &mdash; just HTTP. Manage settings, counters and visitor counts in a few lines of code.</p>
+    <p>Store a value, read it back from anywhere. No SDK, no database to run &mdash; just HTTP. Start
+       anonymously in one request, or sign up and get a private folder, app keys you can't lose, and
+       an API header of your own.</p>
     <div class="stats">
       <div class="stat"><span class="n" id="stat-keys">&mdash;</span><span class="l">Keys stored</span></div>
       <div class="stat"><span class="n" id="stat-apps">&mdash;</span><span class="l">App keys</span></div>
     </div>
+    <nav class="jump">
+      <a href="#how">How it works</a>
+      <a href="#account">Sign in</a>
+      <a href="#console">API console</a>
+      <a href="#reference">Reference</a>
+    </nav>
   </div>
 </header>
 
+<!-- ============ what it is ============ -->
+<section id="how">
+  <div class="wrap">
+    <h2>What this is</h2>
+    <p class="lead">A key-value pair, stored on a server, reachable over plain HTTP from anything that
+       can make a request &mdash; a web page, a shell script, a device, a spreadsheet.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h3><span class="step">1</span> An app key is your store</h3>
+        <p class="note tight">Every app key gets its own database file. Your reads and writes never
+           contend with anybody else's, and nothing you store is mixed in with another user's data.</p>
+      </div>
+      <div class="card">
+        <h3><span class="step">2</span> Keys and values</h3>
+        <p class="note tight">Set a key to a value, read it back, list everything, delete one. Keys go
+           up to 64 characters, values up to 1024.</p>
+      </div>
+      <div class="card">
+        <h3><span class="step">3</span> Counters that count</h3>
+        <p class="note tight">Increment and decrement happen in a single statement, so fifty
+           simultaneous hits land on fifty. A visit counter is one line on page load.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h3>Anonymous, or with an account</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th></th><th>Anonymous</th><th>Signed up</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Getting started</td>
+              <td>One request, no details given</td>
+              <td>Email plus a code &mdash; no password</td>
+            </tr>
+            <tr>
+              <td>Where data lives</td>
+              <td class="mono">App_Data/3cg7aby9.db</td>
+              <td class="mono">App_Data/you_at_example.com/3cg7aby9.db</td>
+            </tr>
+            <tr>
+              <td>Losing the app key</td>
+              <td>The data is gone &mdash; nothing maps back to it</td>
+              <td>Sign in; every key you own is listed</td>
+            </tr>
+            <tr>
+              <td>Who can read it</td>
+              <td>Anyone who has the app key</td>
+              <td>Only requests carrying your API header</td>
+            </tr>
+            <tr>
+              <td>App keys</td>
+              <td>As many as you ask for</td>
+              <td>Up to ten, each its own database</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Signing up changes nothing about existing anonymous keys &mdash; they keep working
+         exactly as they always have.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ account ============ -->
+<section id="account">
+  <div class="wrap">
+    <h2>Your account</h2>
+    <p class="lead">Sign in with an email address and a six-digit code. There is no password to
+       choose, forget or leak.</p>
+
+    <div id="auth-off" class="banner warn" hidden>
+      Accounts are turned off on this deployment. The anonymous API below works as normal.
+    </div>
+
+    <!-- signed out -->
+    <div id="signed-out" hidden>
+      <div class="grid two">
+        <div class="card">
+          <h3>Sign in</h3>
+          <p class="note tight" style="margin-bottom:14px">Already have an account? We'll send a code.</p>
+          <div class="row">
+            <div class="field wide">
+              <label for="signin-email">Email</label>
+              <input id="signin-email" type="email" placeholder="you@example.com" autocomplete="email" spellcheck="false">
+            </div>
+            <button id="btn-signin">Send code</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Sign up</h3>
+          <p class="note tight" style="margin-bottom:14px">New here? Your folder is created the moment
+             you register.</p>
+          <div class="row">
+            <div class="field wide">
+              <label for="signup-email">Email</label>
+              <input id="signup-email" type="email" placeholder="you@example.com" autocomplete="email" spellcheck="false">
+            </div>
+            <button id="btn-signup">Sign up</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- code entry -->
+      <div class="card" id="code-card" hidden style="margin-top:20px">
+        <h3>Enter your code</h3>
+        <div id="code-banner" class="banner"></div>
+        <div class="row">
+          <div class="field">
+            <label for="otp">Six-digit code</label>
+            <input id="otp" class="mono" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+          </div>
+          <button id="btn-verify">Verify</button>
+          <button id="btn-resend" class="ghost">Send another</button>
+          <button id="btn-cancel" class="ghost">Cancel</button>
+        </div>
+      </div>
+
+      <div id="auth-error" class="banner err" hidden style="margin-top:16px"></div>
+    </div>
+
+    <!-- signed in -->
+    <div id="signed-in" hidden>
+      <div class="card">
+        <div class="who">
+          <span class="pill">Signed in</span>
+          <span class="email" id="who-email"></span>
+          <span class="folder">folder <code id="who-folder"></code></span>
+          <span style="flex:1"></span>
+          <button id="btn-signout" class="ghost">Sign out</button>
+        </div>
+
+        <div class="grid two">
+          <div>
+            <h3>Your app keys</h3>
+            <p class="note tight" style="margin-bottom:12px">Each one is a separate database inside
+               your folder.</p>
+            <div class="table-scroll">
+              <table class="keys">
+                <thead><tr><th>App key</th><th>Keys</th><th>Created</th><th></th></tr></thead>
+                <tbody id="key-rows"></tbody>
+              </table>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button id="btn-new-appkey">New app key</button>
+            </div>
+          </div>
+
+          <div>
+            <h3>Your API header</h3>
+            <p class="note tight" style="margin-bottom:12px">Pick any header name and value. Every API
+               call carrying it is treated as yours &mdash; and calls to your app keys are refused
+               without it.</p>
+            <div class="row">
+              <div class="field">
+                <label for="hdr-name">Header name</label>
+                <input id="hdr-name" class="mono" placeholder="x-yourapp-token" spellcheck="false" autocomplete="off">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field wide">
+                <label for="hdr-value">Header value</label>
+                <input id="hdr-value" class="mono" placeholder="something nobody can guess" spellcheck="false" autocomplete="off">
+              </div>
+            </div>
+            <div class="row">
+              <button id="btn-save-header">Save header</button>
+              <button id="btn-suggest-header" class="ghost">Suggest one</button>
+              <button id="btn-clear-header" class="ghost">Remove</button>
+            </div>
+            <div id="header-msg" class="banner" hidden style="margin-top:12px"></div>
+            <p class="note">Treat the value like a password. It is shown here so the console can fill it
+               in for you, which also means anyone who can read this page can use it.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ api console ============ -->
+<section id="console">
+  <div class="wrap">
+    <h2>API console</h2>
+    <p class="lead">Every endpoint, against the live service, with real data. Sign in above and your
+       header and app keys are filled in for you.</p>
+
+    <div class="card">
+      <div class="row">
+        <div class="field wide">
+          <label for="endpoint">Endpoint</label>
+          <select id="endpoint"></select>
+        </div>
+        <button id="btn-send">Send</button>
+      </div>
+      <p class="note tight" id="endpoint-desc"></p>
+
+      <div id="params" style="margin-top:18px"></div>
+
+      <div class="row" id="body-row" hidden>
+        <div class="field wide">
+          <label for="body">Request body (JSON)</label>
+          <textarea id="body" class="mono" spellcheck="false"></textarea>
+        </div>
+      </div>
+
+      <h3 style="margin-top:22px">Headers sent with every call</h3>
+      <div class="row">
+        <div class="field">
+          <label for="con-hdr-name">Header name</label>
+          <input id="con-hdr-name" class="mono" placeholder="x-yourapp-token" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="field wide">
+          <label for="con-hdr-value">Header value</label>
+          <input id="con-hdr-value" class="mono" placeholder="sign in to fill this in" spellcheck="false" autocomplete="off">
+        </div>
+      </div>
+      <div class="row">
+        <label class="checkbox">
+          <input type="checkbox" id="send-bearer"> Also send <code>Authorization: Bearer</code> (needed by
+          <code>/api/v2/me</code>)
+        </label>
+      </div>
+    </div>
+
+    <div class="grid two" style="margin-top:20px">
+      <div class="card">
+        <h3>Response</h3>
+        <div class="out" id="out">Pick an endpoint and press Send&hellip;</div>
+      </div>
+      <div class="card">
+        <h3>The same call as curl</h3>
+        <pre class="code" id="curl"><code id="curl-text">&mdash;</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ quick start ============ -->
-<section>
+<section id="start">
   <div class="wrap">
     <h2>Quick start</h2>
-    <p class="lead">Three requests. Copy them straight into a terminal.</p>
+    <p class="lead">Three requests, no account needed. Copy them straight into a terminal.</p>
 
     <div class="grid">
       <div class="card">
         <h3><span class="step">1</span> Get an app key</h3>
-        <p class="note">Your app key is the handle to your own private store. Keep it &mdash; it cannot be recovered.</p>
+        <p class="note">Your app key is the handle to your own private store. Keep it &mdash; without an
+           account it cannot be recovered.</p>
         <pre class="code" data-copy>curl <span data-base></span>/api/KeyVal/GetAppKey
 
 # "3cg7aby9"</pre>
@@ -252,100 +554,53 @@ footer a { color: var(--accent); }
 # "yourvalue"</pre>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ============ try it ============ -->
-<section>
-  <div class="wrap">
-    <h2>Try it here</h2>
-    <p class="lead">The same calls, against the live service. Start by getting a key.</p>
-
-    <div class="grid">
-      <div class="card">
-        <h3>Your app key</h3>
-        <div class="row">
-          <div class="field">
-            <label for="appkey">App key</label>
-            <input id="appkey" class="mono" placeholder="8 characters" maxlength="8" autocomplete="off" spellcheck="false">
-          </div>
-          <button id="btn-key" style="align-self:flex-end">Get app key</button>
-        </div>
-        <p class="note">Kept in this browser only, so it survives a refresh. Nothing is sent anywhere else.</p>
-      </div>
-
-      <div class="card">
-        <h3>Store &amp; read</h3>
-        <div class="row">
-          <div class="field">
-            <label for="k">Key</label>
-            <input id="k" class="mono" placeholder="yourkey" maxlength="64" autocomplete="off" spellcheck="false">
-          </div>
-          <div class="field">
-            <label for="v">Value</label>
-            <input id="v" class="mono" placeholder="yourvalue" maxlength="1024" autocomplete="off" spellcheck="false">
-          </div>
-        </div>
-        <div class="row">
-          <button id="btn-set">Store</button>
-          <button id="btn-get" class="ghost">Read</button>
-          <button id="btn-inc" class="ghost">Increment</button>
-          <button id="btn-list" class="ghost">List all</button>
-          <button id="btn-del" class="ghost">Delete</button>
-        </div>
-      </div>
-    </div>
 
     <div class="card" style="margin-top:20px">
-      <h3>Response</h3>
-      <div class="out" id="out">Waiting for a request&hellip;</div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ javascript ============ -->
-<section>
-  <div class="wrap">
-    <h2>Use it from JavaScript</h2>
-    <p class="lead">No dependencies. Drop this in and call the three functions.</p>
-
-    <pre class="code" data-copy>&lt;script&gt;
+      <h3>From JavaScript, with an account</h3>
+      <p class="note tight">One header on every request. Swap in the name and value from your account
+         panel.</p>
+      <pre class="code" data-copy>&lt;script&gt;
 const KV_BASE = "<span data-base></span>";
+const KV_APPKEY = "3cg7aby9";
+const KV_HEADERS = { "x-yourapp-token": "kv_your_secret_value" };
 
-async function getValue(appKey, key) {
-  const res = await fetch(`${KV_BASE}/api/KeyVal/GetValue/${appKey}/${key}`);
-  return res.ok ? res.json() : null;
+async function getValue(key) {
+  const res = await fetch(`${KV_BASE}/api/v2/appkeys/${KV_APPKEY}/keys/${key}`, { headers: KV_HEADERS });
+  return res.ok ? (await res.json()).value : null;
 }
 
-async function updateValue(appKey, key, value) {
-  const res = await fetch(
-    `${KV_BASE}/api/KeyVal/UpdateValue/${appKey}/${key}/${encodeURIComponent(value)}`,
-    { method: "POST" });
+async function setValue(key, value) {
+  const res = await fetch(`${KV_BASE}/api/v2/appkeys/${KV_APPKEY}/keys/${key}`, {
+    method: "PUT",
+    headers: { ...KV_HEADERS, "Content-Type": "application/json" },
+    body: JSON.stringify({ value })
+  });
   return res.ok;
 }
 
-async function actOnValue(appKey, key, action) {   // "increment" | "decrement"
-  const res = await fetch(
-    `${KV_BASE}/api/KeyVal/ActOnValue/${appKey}/${key}/${action}`,
-    { method: "POST" });
-  return res.ok ? res.json() : null;
+async function increment(key, by = 1) {
+  const res = await fetch(`${KV_BASE}/api/v2/appkeys/${KV_APPKEY}/keys/${key}/increment`, {
+    method: "POST",
+    headers: { ...KV_HEADERS, "Content-Type": "application/json" },
+    body: JSON.stringify({ by })
+  });
+  return res.ok ? (await res.json()).value : null;
 }
 &lt;/script&gt;</pre>
-
-    <p class="note">
-      A visit counter is one line on page load: <code>actOnValue("3cg7aby9", "visits", "increment")</code>.
-      The key is created at zero the first time, so there is nothing to set up.
-    </p>
+      <p class="note">Leave <code>KV_HEADERS</code> out entirely and the same code works against an
+         anonymous app key.</p>
+    </div>
   </div>
 </section>
 
 <!-- ============ api reference ============ -->
-<section>
+<section id="reference">
   <div class="wrap">
     <h2>API reference</h2>
     <p class="lead">
       <span class="pill">v1</span> is the original API, unchanged and supported indefinitely.
       <span class="pill">v2</span> adds listing, deleting, bigger values and richer responses.
+      <span class="pill muted">auth</span> is new and only concerns accounts.
     </p>
 
     <h3 style="margin-top:24px">v1 &mdash; unchanged since 2017</h3>
@@ -368,7 +623,7 @@ async function actOnValue(appKey, key, action) {   // "increment" | "decrement"
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Does</th></tr></thead>
         <tbody>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/appkeys</td><td>Issue a new app key</td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/appkeys</td><td>Issue an app key &mdash; to your account when your header is sent</td></tr>
           <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}</td><td>Key count and timestamps</td></tr>
           <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys</td><td>List everything you stored</td></tr>
           <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Read one key with timestamps</td></tr>
@@ -380,17 +635,38 @@ async function actOnValue(appKey, key, action) {   // "increment" | "decrement"
       </table>
     </div>
 
+    <h3 style="margin-top:30px">Accounts</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/auth/state</td><td>Whether accounts are on, and how codes are delivered</td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/auth/signup</td><td>Register an address and send it a code</td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/auth/signin</td><td>Send a code to an existing account</td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/auth/verify</td><td>Exchange the code for a session token</td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/auth/signout</td><td>End the session</td></tr>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/me</td><td>Your account, app keys and API header</td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/me/appkeys</td><td>Issue an app key into your folder</td></tr>
+          <tr><td><span class="verb">DEL</span></td><td class="mono">/api/v2/me/appkeys/{appkey}</td><td>Delete an app key and everything under it</td></tr>
+          <tr><td><span class="verb">PUT</span></td><td class="mono">/api/v2/me/header</td><td>Set the custom header: <code>{"name":"...","value":"..."}</code></td></tr>
+          <tr><td><span class="verb">DEL</span></td><td class="mono">/api/v2/me/header</td><td>Remove it</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <p class="note" style="margin-top:18px">
-      Sending the value in a JSON body means it can contain slashes, newlines and anything else a
-      URL path segment cannot carry. Machine-readable schema:
-      <a href="/openapi/v1.json"><code>/openapi/v1.json</code></a>.
+      Routes under <code>/api/v2/me</code> need the session token from <code>verify</code> in
+      <code>Authorization: Bearer</code>, not the custom header &mdash; so a leaked API header cannot
+      mint more app keys or rewrite itself. Failures are RFC 9457 problem documents. Machine-readable
+      schema: <a href="/openapi/v1.json"><code>/openapi/v1.json</code></a>.
     </p>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    Free to use, no warranty. Values are public to anyone holding the app key &mdash; don't store secrets.<br>
+    Free to use, no warranty. An anonymous app key is readable by anyone who has it &mdash; don't store
+    secrets in one.<br>
     <a href="https://www.immanuel.co">immanuel.co</a> &middot; <a href="/health">status</a>
   </div>
 </footer>
@@ -399,26 +675,83 @@ async function actOnValue(appKey, key, action) {   // "increment" | "decrement"
 'use strict';
 
 const BASE = location.origin;
-const out = document.getElementById('out');
 const $ = id => document.getElementById(id);
 
-// Fill every <span data-base> in the code samples with the host this page is served from,
-// so copied snippets work whether that is keyvalue.immanuel.co or localhost.
-document.querySelectorAll('[data-base]').forEach(el => { el.textContent = BASE; });
+const TOKEN_KEY = 'immanuel.keyvalue.token';
+const APPKEY_KEY = 'immanuel.keyvalue.appkey';
+
+// Everything the page knows about who is signed in. `account` is the /api/v2/me payload.
+const state = { token: null, account: null, pending: null, delivery: 'master' };
+
+// ---------- small helpers ----------
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function store(key, value) {
+  try { value === null ? localStorage.removeItem(key) : localStorage.setItem(key, value); } catch { }
+}
+
+function stored(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function show(el, visible) { el.hidden = !visible; }
+
+function banner(el, kind, text) {
+  el.className = 'banner ' + kind;
+  el.textContent = text;
+  show(el, Boolean(text));
+}
+
+/** The detail line out of an RFC 9457 problem document, falling back to whatever we got. */
+function problemText(body, fallback) {
+  if (body && typeof body === 'object') return body.detail || body.title || fallback;
+  return body || fallback;
+}
+
+// ---------- fetch ----------
+
+/**
+ * One request. `headers` is whatever the caller wants on top of the JSON content type; nothing
+ * is added implicitly, so the console shows exactly what it sent.
+ */
+async function request(method, path, { body, headers } = {}) {
+  const options = { method, headers: { ...(headers || {}) } };
+
+  if (body !== undefined && body !== null) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
+  }
+
+  const started = performance.now();
+  const res = await fetch(BASE + path, options);
+  const text = await res.text();
+  const ms = Math.round(performance.now() - started);
+
+  let parsed = text;
+  try { parsed = text ? JSON.parse(text) : ''; } catch { }
+
+  return { ok: res.ok, status: res.status, body: parsed, ms };
+}
+
+/** A request carrying the console session, for account routes. */
+function authed(method, path, body) {
+  return request(method, path, { body, headers: state.token ? { Authorization: 'Bearer ' + state.token } : {} });
+}
 
 // ---------- copy buttons ----------
-document.querySelectorAll('[data-copy]').forEach(block => {
-  // Snapshot the snippet before the button becomes a child of the block, otherwise the
-  // button's own label would end up on the clipboard too.
-  const source = block.textContent.trim();
 
+function attachCopy(block, source) {
   const btn = document.createElement('button');
   btn.className = 'copy';
   btn.type = 'button';
   btn.textContent = 'Copy';
   btn.addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText(source);
+      await navigator.clipboard.writeText(typeof source === 'function' ? source() : source);
       btn.textContent = 'Copied';
       btn.classList.add('done');
       setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1400);
@@ -427,137 +760,495 @@ document.querySelectorAll('[data-copy]').forEach(block => {
     }
   });
   block.appendChild(btn);
-});
-
-// ---------- output ----------
-function show(ok, title, body) {
-  const status = ok ? 'ok' : 'err';
-  const text = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
-  out.innerHTML = `<span class="${status}">${ok ? '✓' : '✗'} ${escapeHtml(title)}</span>\n\n${escapeHtml(text)}`;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
+// Fill every <span data-base> in the code samples with the host this page is served from, so a
+// copied snippet works whether that is keyvalue.immanuel.co or localhost.
+document.querySelectorAll('[data-base]').forEach(el => { el.textContent = BASE; });
 
-// ---------- app key, remembered locally ----------
-const STORAGE_KEY = 'immanuel.keyvalue.appkey';
-try {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) $('appkey').value = saved;
-} catch { /* private browsing - not worth failing over */ }
+// Snapshot each static snippet before its button becomes a child, or the label ends up on the
+// clipboard too.
+document.querySelectorAll('[data-copy]').forEach(block => attachCopy(block, block.textContent.trim()));
 
-$('appkey').addEventListener('change', () => {
-  try { localStorage.setItem(STORAGE_KEY, $('appkey').value.trim()); } catch {}
-});
+// The curl block is rewritten on every change, so its button reads the text at click time rather
+// than being re-attached - which would leave one button per keystroke.
+attachCopy($('curl'), () => $('curl-text').textContent);
 
-function appKey() {
-  const value = $('appkey').value.trim();
-  if (!value) {
-    show(false, 'No app key yet', 'Press "Get app key" first.');
-    return null;
-  }
-  return value;
-}
+// ---------- sign-in / sign-up ----------
 
-function keyName() {
-  const value = $('k').value.trim();
-  if (!value) {
-    show(false, 'No key given', 'Type a key name, for example "yourkey".');
-    return null;
-  }
-  return value;
-}
+async function loadAuthState() {
+  const res = await request('GET', '/api/v2/auth/state');
+  if (!res.ok) return;
 
-// ---------- request helper ----------
-async function call(method, path, body) {
-  const options = { method };
-  if (body !== undefined) {
-    options.headers = { 'Content-Type': 'application/json' };
-    options.body = JSON.stringify(body);
+  state.delivery = res.body.delivery;
+  if (!res.body.enabled) {
+    show($('auth-off'), true);
+    show($('signed-out'), false);
+    show($('signed-in'), false);
+    return;
   }
 
-  const res = await fetch(BASE + path, options);
-  const text = await res.text();
-
-  let parsed = text;
-  try { parsed = text ? JSON.parse(text) : ''; } catch {}
-
-  return { ok: res.ok, status: res.status, body: parsed, label: `${method} ${path} → ${res.status}` };
+  state.token = stored(TOKEN_KEY);
+  if (state.token) await loadAccount();
+  renderAccount();
 }
 
-async function run(fn) {
+async function loadAccount() {
+  const res = await authed('GET', '/api/v2/me');
+
+  if (res.ok) {
+    state.account = res.body;
+  } else {
+    // An expired or revoked session is not an error worth showing - just sign out quietly.
+    state.account = null;
+    state.token = null;
+    store(TOKEN_KEY, null);
+  }
+}
+
+async function requestCode(kind) {
+  const email = $(kind === 'signup' ? 'signup-email' : 'signin-email').value.trim();
+  banner($('auth-error'), 'err', '');
+
+  if (!email) {
+    banner($('auth-error'), 'err', 'Enter an email address first.');
+    return;
+  }
+
+  const res = await request('POST', `/api/v2/auth/${kind}`, { body: { email } });
+
+  if (!res.ok) {
+    banner($('auth-error'), 'err', problemText(res.body, 'Could not send a code.'));
+    return;
+  }
+
+  state.pending = { email, kind };
+  show($('code-card'), true);
+
+  const hint = res.body.code
+    ? `${res.body.message} The code is ${res.body.code} - filled in below.`
+    : res.body.message;
+
+  banner($('code-banner'), res.body.delivery === 'master' ? 'warn' : 'ok', hint);
+  $('otp').value = res.body.code || '';
+  $('otp').focus();
+}
+
+async function verifyCode() {
+  if (!state.pending) return;
+
+  banner($('auth-error'), 'err', '');
+
+  const res = await request('POST', '/api/v2/auth/verify', {
+    body: { email: state.pending.email, code: $('otp').value.trim() }
+  });
+
+  if (!res.ok) {
+    banner($('code-banner'), 'err', problemText(res.body, 'That code was not accepted.'));
+    return;
+  }
+
+  state.token = res.body.token;
+  state.account = res.body.account;
+  store(TOKEN_KEY, state.token);
+
+  state.pending = null;
+  $('otp').value = '';
+  show($('code-card'), false);
+  banner($('auth-error'), 'err', '');
+
+  renderAccount();
+  refreshStats();
+}
+
+async function signOut() {
+  await authed('POST', '/api/v2/auth/signout');
+
+  state.token = null;
+  state.account = null;
+  store(TOKEN_KEY, null);
+
+  renderAccount();
+}
+
+// ---------- account panel ----------
+
+function renderAccount() {
+  const signedIn = Boolean(state.account);
+
+  show($('signed-in'), signedIn);
+  show($('signed-out'), !signedIn);
+
+  if (signedIn) {
+    $('who-email').textContent = state.account.email;
+    $('who-folder').textContent = state.account.folder;
+    $('hdr-name').value = state.account.apiHeader ? state.account.apiHeader.name : '';
+    $('hdr-value').value = state.account.apiHeader ? state.account.apiHeader.value : '';
+    renderKeys();
+  }
+
+  syncConsoleHeader();
+  renderParams();
+}
+
+function renderKeys() {
+  const rows = $('key-rows');
+  const keys = state.account.appKeys || [];
+
+  if (keys.length === 0) {
+    rows.innerHTML = '<tr><td colspan="4" class="empty">No app keys yet.</td></tr>';
+    return;
+  }
+
+  rows.innerHTML = keys.map(key => `
+    <tr>
+      <td class="mono">${escapeHtml(key.appKey)}</td>
+      <td>${key.keyCount}</td>
+      <td class="note" style="margin:0">${escapeHtml((key.createdAt || '').slice(0, 10))}</td>
+      <td style="text-align:right">
+        <button class="danger" data-delete-key="${escapeHtml(key.appKey)}">Delete</button>
+      </td>
+    </tr>`).join('');
+
+  rows.querySelectorAll('[data-delete-key]').forEach(btn =>
+    btn.addEventListener('click', () => deleteAppKey(btn.dataset.deleteKey)));
+}
+
+async function newAppKey() {
+  const res = await authed('POST', '/api/v2/me/appkeys');
+
+  if (!res.ok) {
+    banner($('header-msg'), 'err', problemText(res.body, 'Could not issue an app key.'));
+    return;
+  }
+
+  await loadAccount();
+  renderAccount();
+  refreshStats();
+}
+
+async function deleteAppKey(appKey) {
+  if (!confirm(`Delete app key ${appKey} and everything stored under it? This cannot be undone.`)) return;
+
+  await authed('DELETE', `/api/v2/me/appkeys/${appKey}`);
+
+  await loadAccount();
+  renderAccount();
+  refreshStats();
+}
+
+async function saveHeader() {
+  const res = await authed('PUT', '/api/v2/me/header', {
+    name: $('hdr-name').value.trim(),
+    value: $('hdr-value').value.trim()
+  });
+
+  if (!res.ok) {
+    banner($('header-msg'), 'err', problemText(res.body, 'Could not save the header.'));
+    return;
+  }
+
+  banner($('header-msg'), 'ok', 'Saved. Every API call carrying this header is now yours.');
+  await loadAccount();
+  renderAccount();
+}
+
+async function suggestHeader() {
+  const res = await authed('GET', '/api/v2/me/header/suggest');
+  if (!res.ok) return;
+
+  $('hdr-name').value = $('hdr-name').value.trim() || res.body.name;
+  $('hdr-value').value = res.body.value;
+  banner($('header-msg'), '', 'Press Save header to start using it.');
+}
+
+async function clearHeader() {
+  await authed('DELETE', '/api/v2/me/header');
+
+  $('hdr-name').value = '';
+  $('hdr-value').value = '';
+  banner($('header-msg'), 'warn', 'Removed. Your app keys can now only be reached from this console.');
+
+  await loadAccount();
+  renderAccount();
+}
+
+// ---------- the console ----------
+
+/**
+ * Every endpoint the console can call. `params` are path segments; `body` is the JSON template
+ * pre-filled into the editor; `session` marks the routes that need the bearer token rather than
+ * the custom header.
+ */
+const ENDPOINTS = [
+  { group: 'v2', method: 'POST', path: '/api/v2/appkeys', params: [],
+    desc: 'Issue an app key. With your header on the request it is issued to your account.' },
+  { group: 'v2', method: 'GET', path: '/api/v2/appkeys/{appkey}', params: ['appkey'],
+    desc: 'Key count and timestamps for one app key.' },
+  { group: 'v2', method: 'GET', path: '/api/v2/appkeys/{appkey}/keys', params: ['appkey'],
+    desc: 'Every key stored under one app key.' },
+  { group: 'v2', method: 'GET', path: '/api/v2/appkeys/{appkey}/keys/{key}', params: ['appkey', 'key'],
+    desc: 'Read one key with its timestamps.' },
+  { group: 'v2', method: 'PUT', path: '/api/v2/appkeys/{appkey}/keys/{key}', params: ['appkey', 'key'],
+    body: { value: 'hello' }, desc: 'Create or overwrite. The value travels in the body, so it may contain anything.' },
+  { group: 'v2', method: 'DELETE', path: '/api/v2/appkeys/{appkey}/keys/{key}', params: ['appkey', 'key'],
+    desc: 'Remove one key.' },
+  { group: 'v2', method: 'POST', path: '/api/v2/appkeys/{appkey}/keys/{key}/increment', params: ['appkey', 'key'],
+    body: { by: 1 }, desc: 'Step a counter. Negative values decrement; the key starts at zero if it is new.' },
+  { group: 'v2', method: 'GET', path: '/api/v2/stats', params: [], desc: 'Service-wide totals.' },
+
+  { group: 'v1', method: 'GET', path: '/api/KeyVal/GetAppKey', params: [], desc: 'Issue an app key, v1 style.' },
+  { group: 'v1', method: 'GET', path: '/api/KeyVal/GetValue/{appkey}/{key}', params: ['appkey', 'key'],
+    desc: 'Read a value, or an empty string when it was never set.' },
+  { group: 'v1', method: 'POST', path: '/api/KeyVal/UpdateValue/{appkey}/{key}/{value}', params: ['appkey', 'key', 'value'],
+    desc: 'Create or overwrite, with the value in the URL.' },
+  { group: 'v1', method: 'POST', path: '/api/KeyVal/ActOnValue/{appkey}/{key}/{action}', params: ['appkey', 'key', 'action'],
+    desc: 'increment or decrement.' },
+  { group: 'v1', method: 'GET', path: '/api/KeyVal/GetCount', params: [], desc: 'Keys stored service-wide.' },
+  { group: 'v1', method: 'GET', path: '/api/KeyVal/GetIp', params: [], desc: 'Your IP as the server sees it.' },
+
+  { group: 'Accounts', method: 'GET', path: '/api/v2/auth/state', params: [],
+    desc: 'Whether accounts are on, and how codes are delivered.' },
+  { group: 'Accounts', method: 'GET', path: '/api/v2/me', params: [], session: true,
+    desc: 'Your account, its app keys and its API header.' },
+  { group: 'Accounts', method: 'GET', path: '/api/v2/me/appkeys', params: [], session: true,
+    desc: 'Every app key in your folder.' },
+  { group: 'Accounts', method: 'POST', path: '/api/v2/me/appkeys', params: [], session: true,
+    desc: 'Issue an app key into your folder.' },
+  { group: 'Accounts', method: 'DELETE', path: '/api/v2/me/appkeys/{appkey}', params: ['appkey'], session: true,
+    desc: 'Delete an app key and everything under it.' },
+  { group: 'Accounts', method: 'PUT', path: '/api/v2/me/header', params: [], session: true,
+    body: { name: 'x-yourapp-token', value: 'kv_replace_this_value' }, desc: 'Set your custom API header.' },
+];
+
+// Default values for the path parameters, remembered between calls.
+const paramValues = { appkey: '', key: 'yourkey', value: 'yourvalue', action: 'increment' };
+
+const PARAM_LABELS = {
+  appkey: 'App key',
+  key: 'Key name',
+  value: 'Value',
+  action: 'Action'
+};
+
+function selectedEndpoint() {
+  return ENDPOINTS[Number($('endpoint').value)] || ENDPOINTS[0];
+}
+
+function buildEndpointList() {
+  const select = $('endpoint');
+  const groups = {};
+
+  ENDPOINTS.forEach((endpoint, index) => {
+    (groups[endpoint.group] ||= []).push({ endpoint, index });
+  });
+
+  select.innerHTML = Object.entries(groups).map(([name, items]) =>
+    `<optgroup label="${escapeHtml(name)}">` +
+    items.map(({ endpoint, index }) =>
+      `<option value="${index}">${endpoint.method} ${escapeHtml(endpoint.path)}</option>`).join('') +
+    '</optgroup>').join('');
+}
+
+/** Draws an input for each path parameter, offering the account's app keys as a dropdown. */
+function renderParams() {
+  const endpoint = selectedEndpoint();
+  const host = $('params');
+
+  $('endpoint-desc').textContent = endpoint.desc || '';
+
+  host.innerHTML = endpoint.params.length === 0
+    ? ''
+    : '<div class="row">' + endpoint.params.map(name => `
+        <div class="field${name === 'value' ? ' wide' : ''}">
+          <label for="p-${name}">${PARAM_LABELS[name] || name}</label>
+          ${paramInput(name)}
+        </div>`).join('') + '</div>';
+
+  endpoint.params.forEach(name => {
+    const input = $('p-' + name);
+    if (!input) return;
+
+    input.value = paramValues[name] || '';
+    input.addEventListener('input', () => { paramValues[name] = input.value; updateCurl(); });
+    input.addEventListener('change', () => { paramValues[name] = input.value; updateCurl(); });
+  });
+
+  const hasBody = Boolean(endpoint.body);
+  show($('body-row'), hasBody);
+  if (hasBody) $('body').value = JSON.stringify(endpoint.body, null, 2);
+
+  // Routes under /api/v2/me only answer to a session, so tick the box rather than let the call
+  // fail with a 401 the user has to work out for themselves.
+  if (endpoint.session) $('send-bearer').checked = true;
+
+  updateCurl();
+}
+
+function paramInput(name) {
+  const keys = (state.account && state.account.appKeys) || [];
+
+  if (name === 'appkey' && keys.length > 0) {
+    // A datalist rather than a select, so an anonymous app key can still be typed in.
+    return `<input id="p-appkey" class="mono" list="appkey-options" placeholder="8 characters" autocomplete="off" spellcheck="false">
+            <datalist id="appkey-options">${keys.map(k => `<option value="${escapeHtml(k.appKey)}">`).join('')}</datalist>`;
+  }
+
+  if (name === 'action') {
+    return `<select id="p-action"><option>increment</option><option>decrement</option></select>`;
+  }
+
+  return `<input id="p-${name}" class="mono" placeholder="${escapeHtml(PARAM_LABELS[name] || name)}" autocomplete="off" spellcheck="false">`;
+}
+
+/** The endpoint's path with its parameters filled in and URL-encoded. */
+function resolvedPath() {
+  const endpoint = selectedEndpoint();
+
+  return endpoint.params.reduce(
+    (path, name) => path.replace(`{${name}}`, encodeURIComponent(paramValues[name] || '')),
+    endpoint.path);
+}
+
+/** The headers the console will send: the custom one always, the bearer when asked for. */
+function consoleHeaders() {
+  const headers = {};
+  const name = $('con-hdr-name').value.trim();
+  const value = $('con-hdr-value').value.trim();
+
+  if (name && value) headers[name] = value;
+  if ($('send-bearer').checked && state.token) headers.Authorization = 'Bearer ' + state.token;
+
+  return headers;
+}
+
+/** Mirrors the account's header into the console fields whenever it changes. */
+function syncConsoleHeader() {
+  const header = state.account && state.account.apiHeader;
+
+  if (header) {
+    $('con-hdr-name').value = header.name;
+    $('con-hdr-value').value = header.value;
+  } else if (!state.account) {
+    $('con-hdr-name').value = '';
+    $('con-hdr-value').value = '';
+  }
+
+  $('send-bearer').checked = Boolean(state.token);
+}
+
+function updateCurl() {
+  const endpoint = selectedEndpoint();
+  const lines = [`curl -X ${endpoint.method} \\`];
+
+  Object.entries(consoleHeaders()).forEach(([name, value]) => {
+    // The session token is long and secret; show its shape without printing it in full.
+    const shown = name === 'Authorization' ? 'Bearer <your session token>' : value;
+    lines.push(`  -H '${name}: ${shown}' \\`);
+  });
+
+  if (endpoint.body) {
+    lines.push(`  -H 'Content-Type: application/json' \\`);
+    lines.push(`  -d '${$('body').value.replace(/\s*\n\s*/g, ' ')}' \\`);
+  }
+
+  lines.push(`  ${BASE}${resolvedPath()}`);
+
+  $('curl-text').textContent = lines.join('\n');
+}
+
+async function send() {
+  const endpoint = selectedEndpoint();
+  const out = $('out');
+
+  let body;
+  if (endpoint.body) {
+    try {
+      body = JSON.parse($('body').value);
+    } catch (err) {
+      out.innerHTML = `<span class="err">&#10007; The request body is not valid JSON</span>\n\n${escapeHtml(String(err))}`;
+      return;
+    }
+  }
+
+  out.textContent = 'Sending…';
+
   try {
-    const r = await fn();
-    if (r) show(r.ok, r.label, r.body === '' ? '(empty)' : r.body);
+    const res = await request(endpoint.method, resolvedPath(), { body, headers: consoleHeaders() });
+
+    const label = `${endpoint.method} ${resolvedPath()} → ${res.status} in ${res.ms} ms`;
+    const shown = typeof res.body === 'string' ? res.body : JSON.stringify(res.body, null, 2);
+
+    out.innerHTML = `<span class="${res.ok ? 'ok' : 'err'}">${res.ok ? '✓' : '✗'} ${escapeHtml(label)}</span>\n\n` +
+      escapeHtml(shown === '' ? '(empty response body)' : shown);
+
+    // Anything that issues or removes an app key changes what the rest of the page shows.
+    if (res.ok && endpoint.path.includes('appkeys') && endpoint.method !== 'GET') {
+      if (state.token) { await loadAccount(); renderAccount(); }
+      refreshStats();
+    }
+
+    // Newly issued keys go straight into the app key field, so the next call can use them.
+    if (res.ok && res.body && res.body.appKey && endpoint.path.endsWith('/appkeys')) {
+      paramValues.appkey = res.body.appKey;
+      store(APPKEY_KEY, res.body.appKey);
+      renderParams();
+    }
   } catch (err) {
-    show(false, 'Request failed', String(err));
+    out.innerHTML = `<span class="err">&#10007; Request failed</span>\n\n${escapeHtml(String(err))}`;
   }
 }
-
-// ---------- buttons ----------
-$('btn-key').addEventListener('click', () => run(async () => {
-  const r = await call('POST', '/api/v2/appkeys');
-  if (r.ok && r.body && r.body.appKey) {
-    $('appkey').value = r.body.appKey;
-    try { localStorage.setItem(STORAGE_KEY, r.body.appKey); } catch {}
-  }
-  refreshStats();
-  return r;
-}));
-
-$('btn-set').addEventListener('click', () => run(async () => {
-  const a = appKey(), k = keyName();
-  if (!a || !k) return null;
-  const r = await call('PUT', `/api/v2/appkeys/${a}/keys/${encodeURIComponent(k)}`, { value: $('v').value });
-  refreshStats();
-  return r;
-}));
-
-$('btn-get').addEventListener('click', () => run(async () => {
-  const a = appKey(), k = keyName();
-  if (!a || !k) return null;
-  const r = await call('GET', `/api/v2/appkeys/${a}/keys/${encodeURIComponent(k)}`);
-  if (r.ok && r.body && r.body.value != null) $('v').value = r.body.value;
-  return r;
-}));
-
-$('btn-inc').addEventListener('click', () => run(async () => {
-  const a = appKey(), k = keyName();
-  if (!a || !k) return null;
-  const r = await call('POST', `/api/v2/appkeys/${a}/keys/${encodeURIComponent(k)}/increment`, { by: 1 });
-  if (r.ok && r.body && r.body.value != null) $('v').value = r.body.value;
-  refreshStats();
-  return r;
-}));
-
-$('btn-list').addEventListener('click', () => run(async () => {
-  const a = appKey();
-  if (!a) return null;
-  return call('GET', `/api/v2/appkeys/${a}/keys`);
-}));
-
-$('btn-del').addEventListener('click', () => run(async () => {
-  const a = appKey(), k = keyName();
-  if (!a || !k) return null;
-  const r = await call('DELETE', `/api/v2/appkeys/${a}/keys/${encodeURIComponent(k)}`);
-  refreshStats();
-  return { ...r, body: r.ok ? 'Deleted.' : r.body };
-}));
 
 // ---------- live stats ----------
+
 async function refreshStats() {
   try {
     const res = await fetch(BASE + '/api/v2/stats');
     if (!res.ok) return;
+
     const stats = await res.json();
     $('stat-keys').textContent = stats.keys.toLocaleString();
     $('stat-apps').textContent = stats.appKeys.toLocaleString();
   } catch { /* the page is still perfectly usable without the counters */ }
 }
 
+// ---------- wiring ----------
+
+$('btn-signin').addEventListener('click', () => requestCode('signin'));
+$('btn-signup').addEventListener('click', () => requestCode('signup'));
+$('btn-verify').addEventListener('click', verifyCode);
+$('btn-resend').addEventListener('click', () => state.pending && requestCode(state.pending.kind));
+$('btn-cancel').addEventListener('click', () => {
+  state.pending = null;
+  $('otp').value = '';
+  show($('code-card'), false);
+});
+$('btn-signout').addEventListener('click', signOut);
+
+$('btn-new-appkey').addEventListener('click', newAppKey);
+$('btn-save-header').addEventListener('click', saveHeader);
+$('btn-suggest-header').addEventListener('click', suggestHeader);
+$('btn-clear-header').addEventListener('click', clearHeader);
+
+$('otp').addEventListener('keydown', e => { if (e.key === 'Enter') verifyCode(); });
+$('signin-email').addEventListener('keydown', e => { if (e.key === 'Enter') requestCode('signin'); });
+$('signup-email').addEventListener('keydown', e => { if (e.key === 'Enter') requestCode('signup'); });
+
+$('endpoint').addEventListener('change', renderParams);
+$('btn-send').addEventListener('click', send);
+$('body').addEventListener('input', updateCurl);
+$('con-hdr-name').addEventListener('input', updateCurl);
+$('con-hdr-value').addEventListener('input', updateCurl);
+$('send-bearer').addEventListener('change', updateCurl);
+
+// ---------- start ----------
+
+paramValues.appkey = stored(APPKEY_KEY) || '';
+
+buildEndpointList();
+renderParams();
 refreshStats();
+loadAuthState();
 </script>
 
 </body>

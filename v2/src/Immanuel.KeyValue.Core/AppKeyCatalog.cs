@@ -9,29 +9,23 @@ namespace Immanuel.KeyValue.Core;
 /// </summary>
 public sealed class AppKeyCatalog(SqliteStoreFactory factory)
 {
-    /// <summary>Records a freshly issued app key.</summary>
-    public async Task RegisterAsync(string appKey, string? ipAddress, string? userAgent)
-    {
-        var db = await factory.OpenCatalogAsync();
+    private const string InfoColumns = "ClientKey, KeyCount, CreatedAt, LastAccessAt, OwnerEmail";
 
-        await db.InsertTableAsync("AppKey", new Dictionary<string, object>
-        {
-            ["ClientKey"] = appKey,
-            ["IpAddr"] = Sql.OrNull(ipAddress),
-            ["Agent"] = Sql.OrNull(userAgent),
-        });
-    }
-
-    /// <summary>Adds a catalog row for an app key whose database already exists but which was
-    /// never registered - used when adopting v1 data and when auto-create is enabled.</summary>
-    public async Task RegisterIfMissingAsync(string appKey, string? ipAddress, string? userAgent)
+    /// <summary>
+    /// Adds a catalog row for an app key whose database already exists but which was never
+    /// registered - used when issuing a key, when adopting v1 data, and when auto-create is on.
+    /// </summary>
+    /// <param name="ownerEmail">The account the key belongs to, or null for an anonymous key.</param>
+    public async Task RegisterIfMissingAsync(
+        string appKey, string? ipAddress, string? userAgent, string? ownerEmail = null)
     {
         var db = await factory.OpenCatalogAsync();
         var key = await db.GetSqlValueAsync(appKey);
 
         await db.ExecuteAsync(
-            $"INSERT INTO AppKey (ClientKey, IpAddr, Agent) " +
-            $"VALUES ({key}, {await db.GetSqlValueAsync(Sql.OrNull(ipAddress))}, {await db.GetSqlValueAsync(Sql.OrNull(userAgent))}) " +
+            $"INSERT INTO AppKey (ClientKey, IpAddr, Agent, OwnerEmail) " +
+            $"VALUES ({key}, {await db.GetSqlValueAsync(Sql.OrNull(ipAddress))}, " +
+            $"{await db.GetSqlValueAsync(Sql.OrNull(userAgent))}, {await db.GetSqlValueAsync(Sql.OrNull(ownerEmail))}) " +
             $"ON CONFLICT(ClientKey) DO NOTHING;");
     }
 
@@ -49,7 +43,30 @@ public sealed class AppKeyCatalog(SqliteStoreFactory factory)
         var key = await db.GetSqlValueAsync(appKey);
 
         return await db.FirstAsync<AppKeyInfo?>(
-            $"SELECT ClientKey, KeyCount, CreatedAt, LastAccessAt FROM AppKey WHERE ClientKey = {key};");
+            $"SELECT {InfoColumns} FROM AppKey WHERE ClientKey = {key};");
+    }
+
+    /// <summary>Every app key belonging to one account, newest first. This is what the console's
+    /// key list is built from.</summary>
+    public async Task<IReadOnlyList<AppKeyInfo>> ListByOwnerAsync(string ownerEmail)
+    {
+        var db = await factory.OpenCatalogAsync();
+
+        var rows = await db.ExecuteSelectAsync<AppKeyInfo>(
+            $"SELECT {InfoColumns} FROM AppKey " +
+            $"WHERE OwnerEmail = {await db.GetSqlValueAsync(ownerEmail)} " +
+            $"ORDER BY CreatedAt DESC, ClientKey;");
+
+        return rows.ToList();
+    }
+
+    /// <summary>How many app keys an account holds, for the per-account quota.</summary>
+    public async Task<long> CountByOwnerAsync(string ownerEmail)
+    {
+        var db = await factory.OpenCatalogAsync();
+
+        return await db.ExecuteCountAsync(
+            $"SELECT COUNT(*) FROM AppKey WHERE OwnerEmail = {await db.GetSqlValueAsync(ownerEmail)};");
     }
 
     /// <summary>Stamps the app key as used. Fire-and-forget from the caller's point of view -

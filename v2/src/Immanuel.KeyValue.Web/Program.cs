@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading.RateLimiting;
 using Immanuel.KeyValue.Core;
 using Immanuel.KeyValue.Web;
+using Immanuel.KeyValue.Web.Auth;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -12,12 +13,18 @@ var rateLimit = builder.Configuration.GetSection(RateLimitOptions.SectionName).G
 var proxy = builder.Configuration.GetSection(ProxyOptions.SectionName).Get<ProxyOptions>() ?? new ProxyOptions();
 
 builder.Services.AddKeyValueStore(builder.Configuration, builder.Environment.ContentRootPath);
+builder.Services.AddKeyValueAccounts(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 
+// Who is calling, resolved once per request by CallerMiddleware and read by the controllers.
+builder.Services.AddScoped<CallerContext>();
+
 // The whole point of the service is being called from JavaScript on other people's pages,
-// so every origin is allowed - the same as v1's OWIN CorsOptions.AllowAll.
+// so every origin is allowed - the same as v1's OWIN CorsOptions.AllowAll. Accounts do not
+// change that: the credential is a header a caller has to opt into sending, never a cookie the
+// browser attaches on its own, so there is no cross-site request to forge.
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
@@ -87,6 +94,9 @@ app.UseStaticFiles();
 
 app.UseCors();
 if (rateLimit.Enabled) app.UseRateLimiter();
+
+// After the rate limiter, so an unauthenticated flood cannot spend a database lookup per request.
+app.UseMiddleware<CallerMiddleware>();
 
 app.MapControllers();
 app.MapOpenApi();

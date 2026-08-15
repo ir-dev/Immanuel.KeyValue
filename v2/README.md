@@ -6,6 +6,10 @@ database through [Ark.Rapid.Database](https://www.nuget.org/packages/Ark.Rapid.D
 Every v1 endpoint still works at the same URL with the same response format. Nothing written
 against the old service needs to change.
 
+Sign-up is optional and additive: an account gets you a folder of your own, app keys you cannot
+lose, and a custom HTTP header that authenticates your calls. Anonymous app keys behave exactly
+as they always have.
+
 ---
 
 ## Run it
@@ -25,7 +29,7 @@ From a terminal:
 
 ```bash
 dotnet run --project src/Immanuel.KeyValue.Web    # http://localhost:5086
-dotnet test                                        # 95 tests
+dotnet test                                        # 161 tests
 dotnet build                                       # whole solution
 ```
 
@@ -35,13 +39,17 @@ Databases are created under `src/Immanuel.KeyValue.Web/App_Data/`.
 
 Each project has an `appsettings.Development.json.example`. Copy it to
 `appsettings.Development.json` and edit — **that file is git-ignored**, which is where anything
-resembling a credential belongs. The web app runs fine without one; the migrator needs the
-connection string from somewhere.
+resembling a credential belongs: the migrator's connection string, and the web app's SMTP
+password.
 
 ```bash
 cp src/Immanuel.KeyValue.Migrator/appsettings.Development.json.example \
    src/Immanuel.KeyValue.Migrator/appsettings.Development.json
 ```
+
+The web app runs fine without one. With no SMTP configured it accepts `Auth:MasterOtp` for every
+sign-in, and the development settings set `Auth:RevealMasterOtp` so the console fills the code in
+for you — so signing up locally needs no mailbox at all.
 
 ---
 
@@ -49,23 +57,32 @@ cp src/Immanuel.KeyValue.Migrator/appsettings.Development.json.example \
 
 ```
 App_Data/
-  _catalog.db      Registry of issued app keys + a cached key count for each.
-  3cg7aby9.db      One database per app key. The file name is the app key.
+  _catalog.db                     Registry of issued app keys + a cached key count for each.
+  _users.db                       Accounts, one-time codes, sessions.
+  3cg7aby9.db                     An anonymous app key. The file name is the app key.
   pk4m2xn8.db
-  ...
+  raj_at_immanuel.co/             One folder per signed-up address: "@" becomes "_at_".
+    7hq2mz4v.db                   App keys issued to that account.
+    b9wk3ct1.db
 ```
 
 v1 kept every user's rows in one SQL Server table, so all traffic contended on one set of
 locks. In v2 an app key's reads and writes touch only that app key's file, and every file is in
 WAL mode so readers never block on a writer.
 
-The one shared file is `_catalog.db`. It is deliberately kept out of the hot path: reads never
-touch it, overwrites never touch it, and `LastAccessAt` is stamped at most once per app key
-every five minutes. Only issuing a key, or adding/removing one, writes to it.
+The two shared files are deliberately kept out of the hot path. `_catalog.db` is never touched by
+a read or an overwrite, and `LastAccessAt` is stamped at most once per app key every five
+minutes; only issuing a key, or adding/removing one, writes to it. `_users.db` is touched on
+sign-in and when a request carries a credential, never otherwise.
 
-**The app key is a file name, so it is validated as a security boundary.** Exactly eight
-characters of `a-z0-9`, checked before anything reaches the file system — that rules out `../`,
-absolute paths, and the `_catalog` name itself. See `AppKey.cs` and its tests.
+**Both the app key and the folder name are file-system paths, so both are validated as security
+boundaries.** An app key is exactly eight characters of `a-z0-9`; a folder name has to map back
+to an email address through a narrow character set. Both are checked before anything reaches the
+file system, which rules out `../`, absolute paths, and the underscore-prefixed names the shared
+files use. See `AppKey.cs`, `UserFolder.cs` and their tests.
+
+App keys stay globally unique whichever folder they live in, so a caller never has to say which
+account a key belongs to — the store resolves the folder once and caches it.
 
 ### Schema
 
@@ -136,11 +153,101 @@ all new. Failures are RFC 9457 problem documents. Schema at `/openapi/v1.json`, 
 
 Both APIs read and write the same data — you can mix them freely.
 
+### Accounts
+
+| Method | Path | | Credential |
+|---|---|---|---|
+| `GET` | `/api/v2/auth/state` | Are accounts on, and how are codes delivered | — |
+| `POST` | `/api/v2/auth/signup` | Register an address and send it a code | — |
+| `POST` | `/api/v2/auth/signin` | Send a code to an existing account | — |
+| `POST` | `/api/v2/auth/verify` | Exchange the code for a session token | — |
+| `POST` | `/api/v2/auth/signout` | End the session | Bearer |
+| `GET` | `/api/v2/me` | Account, app keys and API header | Bearer |
+| `GET` `POST` | `/api/v2/me/appkeys` | List, or issue into your folder | Bearer |
+| `DELETE` | `/api/v2/me/appkeys/{appkey}` | Delete a key and everything under it | Bearer |
+| `GET` `PUT` `DELETE` | `/api/v2/me/header` | Read, set or remove the custom header | Bearer |
+
+---
+
+## Accounts
+
+Optional, and off the hot path. Everything above works without one.
+
+### Signing in
+
+There are no passwords. You give an address, the service sends a six-digit code, and you send the
+code back for a session token — which the console keeps and puts in `Authorization: Bearer`.
+
+```bash
+curl -X POST https://keyvalue.immanuel.co/api/v2/auth/signup \
+  -H 'Content-Type: application/json' -d '{"email":"you@example.com"}'
+
+curl -X POST https://keyvalue.immanuel.co/api/v2/auth/verify \
+  -H 'Content-Type: application/json' -d '{"email":"you@example.com","code":"123456"}'
+# {"token":"...","expiresAt":"...","account":{...}}
+```
+
+Codes are hashed before they are stored, expire after ten minutes, and are thrown away after five
+wrong guesses. Session tokens are hashed the same way, so a copy of `_users.db` is not a set of
+working credentials.
+
+**With no SMTP relay configured, the code from `Auth:MasterOtp` is what gets accepted** — for
+every address. That is what makes a fresh checkout usable with no mail setup, and it means anyone
+who knows it can sign in as anybody. Configure `Auth:Smtp` before putting the service anywhere
+public.
+
+### Your folder
+
+Signing up creates `App_Data/<your address with @ replaced by _at_>/`. App keys you issue while
+signed in are created there, are listed when you sign in, and are deleted with their data when
+you ask. That is the difference an account makes: an anonymous app key that you lose is gone,
+because nothing maps back to it.
+
+### The custom API header
+
+An account chooses its own HTTP header — both the name and the value:
+
+```bash
+curl -X PUT https://keyvalue.immanuel.co/api/v2/me/header \
+  -H 'Authorization: Bearer <session token>' -H 'Content-Type: application/json' \
+  -d '{"name":"x-yourapp-token","value":"kv_something_nobody_can_guess"}'
+```
+
+From then on, any API call carrying that header is treated as yours, and calls to your app keys
+are refused without it:
+
+```bash
+curl https://keyvalue.immanuel.co/api/v2/appkeys/7hq2mz4v/keys \
+  -H 'x-yourapp-token: kv_something_nobody_can_guess'
+```
+
+Names are matched case-insensitively and stored lowercase, must be an HTTP token of up to 64
+characters, and cannot be one the server or a proxy already gives a meaning (`Authorization`,
+`Host`, `X-Forwarded-For` and the rest of `Auth:ReservedHeaderNames`). Values are 8–128 printable
+ASCII characters. The pair is unique across accounts, so a call can never be ambiguous about who
+made it.
+
+Three things worth knowing:
+
+- **The header does not manage the account.** `/api/v2/me` needs the session token instead, so a
+  leaked header cannot mint more app keys or rewrite the credential that leaked.
+- **The value is stored as given, and shown back to you**, because the console fills it into
+  every request for you. It is a bearer credential in a page you are signed in to — treat it like
+  a password, and rotate it by saving a new one.
+- **Anonymous app keys are unaffected.** They have no owner, so they stay open to whoever holds
+  the key, which is what keeps a decade of v1 callers working.
+
+### The console
+
+The landing page is the documentation and the test client. Signed in, it fills your header, your
+session token and your app keys into a form that will call any endpoint on the list against the
+live service, and shows the equivalent `curl` next to the response.
+
 ---
 
 ## Behaviour changes
 
-Four, all deliberate:
+Four in the store itself, all deliberate:
 
 1. **Unknown app keys are rejected.** v1 had no registration: any 8-character string became a
    real store on first write, which meant unbounded file creation here. Keys must now be issued
@@ -154,6 +261,10 @@ Four, all deliberate:
 
 App keys are now generated with a cryptographic RNG rather than a shared `System.Random`, so
 issued keys are no longer predictable. Existing keys are unaffected.
+
+Accounts add a fifth, which touches no existing caller: **an app key issued to an account is a
+403 without that account's API header**, on both APIs. Anonymous app keys — every key v1 ever
+handed out — have no owner and stay open to whoever holds the key.
 
 ---
 
@@ -169,6 +280,24 @@ issued keys are no longer predictable. Existing keys are unaffected.
     "MaxValueLength": 1024,            // v1's varchar(1024)
     "MaxKeysPerAppKey": 1000,          // New: stops one key filling the disk
     "AutoCreateUnknownAppKeys": false  // true restores v1's permissive writes
+  },
+  "Auth": {
+    "Enabled": true,                   // false closes /api/v2/auth and /api/v2/me only
+    "MasterOtp": "000000",             // Accepted for every address while Smtp.Host is empty
+    "RevealMasterOtp": false,          // true returns it in the response - development only
+    "OtpLifetimeMinutes": 10,
+    "OtpMaxAttempts": 5,               // Wrong guesses before the code is discarded
+    "SessionLifetimeHours": 336,
+    "MaxAppKeysPerUser": 10,
+    "Smtp": {
+      "Host": "",                      // Empty means no delivery, so MasterOtp is used
+      "Port": 587,
+      "UseSsl": true,                  // STARTTLS
+      "UserName": "",
+      "Password": "",                  // Belongs in appsettings.Development.json, not here
+      "FromAddress": "",
+      "FromName": "Immanuel KeyValue"
+    }
   },
   "RateLimit": {
     "Enabled": true,
@@ -194,6 +323,15 @@ Two settings need attention:
   slip the rate limiter. Only set it when nothing but your proxy can reach the app.
 - **TLS terminates at the proxy.** The app deliberately does not call `UseHttpsRedirection()`;
   doing so behind a TLS-terminating proxy is the usual cause of redirect loops.
+
+A third applies once accounts are in use: **configure `Auth:Smtp`, or turn `Auth:Enabled` off.**
+Without a relay every sign-in accepts `Auth:MasterOtp`, which is one shared secret standing
+between the internet and every account. `Auth:RevealMasterOtp` must stay false in production for
+the same reason — it puts that secret in an unauthenticated response.
+
+CORS stays wide open, which is safe here because the credential is a header a caller has to opt
+into sending rather than a cookie a browser attaches on its own: there is no cross-site request
+to forge.
 
 `DataDirectory` should point at persistent storage — it is live user data. Back it up like a
 database, because it is one. The `.gitignore` keeps `App_Data/` and `*.db` out of the repo.
@@ -262,11 +400,24 @@ If a run is interrupted, re-run it — app keys already copied are skipped.
 ## Project layout
 
 ```
-src/Immanuel.KeyValue.Core/        AppKey validation, schema, SQLite factory, catalog, store
-src/Immanuel.KeyValue.Web/         Controllers, host configuration, landing page
+src/Immanuel.KeyValue.Core/        AppKey and folder validation, schema, SQLite factory,
+                                   catalog, store, accounts and one-time codes
+src/Immanuel.KeyValue.Web/         Controllers, caller resolution, host configuration,
+                                   landing page and API console
 src/Immanuel.KeyValue.Migrator/    One-time SQL Server -> SQLite tool
-tests/Immanuel.KeyValue.Tests/     Store, legacy-API and v2-API tests
+tests/Immanuel.KeyValue.Tests/     Store, account, legacy-API and v2-API tests
 ```
 
 `Core` is a plain class library so the web app and the migration tool share one storage
 implementation and cannot drift apart on schema.
+
+Where the account pieces live:
+
+| | |
+|---|---|
+| `Core/UserFolder.cs` | Email ⇄ folder name, and the validation that makes it a safe path |
+| `Core/AccountService.cs` | Sign-up, sign-in, codes, sessions, the custom header |
+| `Core/UserDirectory.cs` | Everything in `_users.db`, data access only |
+| `Core/OtpSender.cs` | SMTP delivery, and the `CanSend` flag that selects the master code |
+| `Web/Auth/CallerMiddleware.cs` | Turns the two credentials into a caller, once per request |
+| `Web/Auth/AppKeyAccess.cs` | The single rule both controllers use to authorise an app key |

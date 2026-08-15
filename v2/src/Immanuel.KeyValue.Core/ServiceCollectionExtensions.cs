@@ -28,4 +28,24 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>
+    /// Registers accounts, one-time-password delivery and sessions on top of
+    /// <see cref="AddKeyValueStore"/>, which must already have run - the accounts database is one
+    /// more file in the same data directory.
+    /// </summary>
+    public static IServiceCollection AddKeyValueAccounts(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
+
+        services.AddSingleton<UserDirectory>();
+        services.AddSingleton<IOtpSender, SmtpOtpSender>();
+
+        // Singleton because AccountService caches the set of claimed header names; nothing here
+        // holds per-request state.
+        services.AddSingleton<AccountService>();
+
+        return services;
+    }
 }

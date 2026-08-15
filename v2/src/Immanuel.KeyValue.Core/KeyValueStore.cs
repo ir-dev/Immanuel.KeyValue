@@ -24,8 +24,15 @@ public sealed class KeyValueStore(
     private static readonly TimeSpan TouchInterval = TimeSpan.FromMinutes(5);
     private readonly ConcurrentDictionary<string, DateTimeOffset> _lastTouched = new();
 
-    /// <summary>Issues a new app key and provisions its database.</summary>
-    public async Task<string> CreateAppKeyAsync(string? ipAddress, string? userAgent)
+    /// <summary>
+    /// Issues a new app key and provisions its database.
+    /// </summary>
+    /// <param name="owner">
+    /// The account the key belongs to, or null to issue an anonymous key. An owned key's database
+    /// is created inside that account's folder - <c>App_Data/raj_at_immanuel.co/</c> - and only
+    /// that account may read or write it.
+    /// </param>
+    public async Task<string> CreateAppKeyAsync(string? ipAddress, string? userAgent, UserAccount? owner = null)
     {
         // Retry only guards against the vanishingly unlikely collision of two identical
         // random keys; 36^8 is roughly 2.8 trillion combinations.
@@ -38,10 +45,10 @@ public sealed class KeyValueStore(
                 throw new InvalidOperationException("Could not allocate a free app key.");
             }
 
-            await factory.OpenAsync(appKey);
-            await catalog.RegisterIfMissingAsync(appKey, ipAddress, userAgent);
+            await factory.CreateAsync(appKey, owner?.Folder);
+            await catalog.RegisterIfMissingAsync(appKey, ipAddress, userAgent, owner?.Email);
 
-            logger.LogInformation("Issued app key {AppKey}", appKey);
+            logger.LogInformation("Issued app key {AppKey} to {Owner}", appKey, owner?.Email ?? "anonymous");
             return appKey;
         }
     }
@@ -49,6 +56,36 @@ public sealed class KeyValueStore(
     /// <summary>True when this app key has been issued. Answered from the file system, so it
     /// costs nothing and never queues behind the catalog.</summary>
     public bool AppKeyExists(string appKey) => factory.Exists(appKey);
+
+    /// <summary>
+    /// The account owning an app key, or null when it is anonymous or unknown. Read from where
+    /// the file sits rather than from the catalog, so authorising a request stays a file-system
+    /// lookup and never queues behind the one shared catalog database.
+    /// </summary>
+    public string? OwnerOf(string appKey) => factory.OwnerOf(appKey);
+
+    /// <summary>Every app key belonging to one account.</summary>
+    public Task<IReadOnlyList<AppKeyInfo>> ListAppKeysAsync(string ownerEmail) =>
+        catalog.ListByOwnerAsync(ownerEmail);
+
+    public Task<long> CountAppKeysAsync(string ownerEmail) => catalog.CountByOwnerAsync(ownerEmail);
+
+    /// <summary>
+    /// Deletes an app key and everything stored under it. Irreversible, which is why only the
+    /// account that owns the key can reach this.
+    /// </summary>
+    public async Task<bool> DeleteAppKeyAsync(string appKey)
+    {
+        if (!AppKey.IsValid(appKey) || !factory.Exists(appKey)) return false;
+
+        var deleted = factory.Delete(appKey);
+        if (deleted) await catalog.DeleteAsync(appKey);
+
+        _lastTouched.TryRemove(appKey, out _);
+
+        logger.LogInformation("Deleted app key {AppKey}", appKey);
+        return deleted;
+    }
 
     public Task<AppKeyInfo?> GetAppKeyInfoAsync(string appKey) =>
         AppKey.IsValid(appKey) ? catalog.GetAsync(appKey) : Task.FromResult<AppKeyInfo?>(null);

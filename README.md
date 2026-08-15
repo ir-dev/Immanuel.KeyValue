@@ -2,7 +2,7 @@
 
 A free, public key-value store you can call over plain HTTP — the service behind
 [keyvalue.immanuel.co](https://keyvalue.immanuel.co). Ask for an app key, store values under it,
-read them back from anywhere. No sign-up, no SDK.
+read them back from anywhere. No SDK, and no account unless you want one.
 
 This repository holds two generations of the same service.
 
@@ -12,8 +12,9 @@ This repository holds two generations of the same service.
 | Framework | ASP.NET MVC 5 / Web API 2 (.NET Framework 4.6) | ASP.NET Core (.NET 10) |
 | Storage | One shared SQL Server table | One SQLite database per app key, via [Ark.Rapid.Database](https://www.nuget.org/packages/Ark.Rapid.Database) |
 | Data access | Inline `SqlCommand` + stored procedures | `Ark.Rapid.Database` |
-| Front end | Inline-styled page, jQuery, Facebook SDK, Google Analytics | Responsive static page, no dependencies |
-| Tests | None | 95 |
+| Accounts | None | Optional: email + one-time code, a folder per address, a custom API header |
+| Front end | Inline-styled page, jQuery, Facebook SDK, Google Analytics | Responsive static page with a live API console, no dependencies |
+| Tests | None | 161 |
 
 **v2 keeps every v1 endpoint working, URL for URL.** Code written against this service over the
 last decade needs no changes. See [`v2/README.md`](v2/README.md) for what to run and what changed.

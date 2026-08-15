@@ -32,6 +32,10 @@ public sealed class AppKeyInfo
     public long KeyCount { get; set; }
     public string CreatedAt { get; set; } = "";
     public string? LastAccessAt { get; set; }
+
+    /// <summary>The account this key belongs to, or null when it was issued anonymously. An
+    /// owned key's database lives in that account's folder rather than the data directory root.</summary>
+    public string? OwnerEmail { get; set; }
 }
 
 /// <summary>Service-wide totals.</summary>
