@@ -1,2 +1,0 @@
-
-moved the connection string avaialable in the carn file

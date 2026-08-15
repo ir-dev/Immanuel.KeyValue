@@ -1,0 +1,4 @@
+
+v1 - hosted on: https://keyvalue.immanuel.co/
+
+v2 - hosted on: https://kv-store.immanuel.co/

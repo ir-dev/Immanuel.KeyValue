@@ -15,102 +15,453 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Free Online Key-Value Store">
 <meta property="og:description" content="Key value pair store, online, completely free. Stores and maintains key value pairs.">
+<meta name="theme-color" content="#f4f7f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1618" media="(prefers-color-scheme: dark)">
 <link rel="shortcut icon" type="image/png" href="/favicon.ico">
 
+<!-- Set the theme before first paint, so a dark-mode reader never sees a white flash. -->
+<script>
+  try {
+    var saved = localStorage.getItem('immanuel.keyvalue.theme');
+    if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
+  } catch (e) { }
+</script>
+
 <style>
+/* ============================================================
+   tokens
+   ============================================================ */
 :root {
+  color-scheme: light;
+
+  --wrap: 1140px;
+  --bar-h: 64px;
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+
   --bg: #f4f7f8;
   --surface: #ffffff;
-  --surface-alt: #eef3f4;
-  --border: #d5dfe1;
-  --text: #17282c;
-  --text-muted: #5c7076;
-  --accent: #0f8b8d;
+  --surface-2: #f1f6f7;
+  --surface-3: #e6eef0;
+  --border: #dae4e6;
+  --border-2: #c1d1d4;
+
+  --text: #0f2024;
+  --text-muted: #55696f;
+  --text-faint: #7d9197;
+
+  --accent: #0d8b8d;
   --accent-strong: #0a6d6f;
-  --accent-soft: #dff1f1;
-  --code-bg: #17282c;
-  --code-text: #e6f2f2;
-  --ok: #1a7f4b;
+  --accent-soft: #ddf0f0;
+  --accent-line: #a9dcdc;
+  --accent-contrast: #ffffff;
+
+  --code-bg: #0d1c20;
+  --code-text: #dbebeb;
+  --code-cmd: #7fd8d2;
+  --code-flag: #f0c987;
+  --code-str: #a8dda0;
+  --code-cmt: #6d888e;
+
+  --ok: #16794a;
+  --ok-soft: #ddf1e7;
   --err: #b3261e;
+  --err-soft: #fbe7e5;
   --warn: #8a5a00;
   --warn-soft: #fdf3dc;
-  --radius: 12px;
-  --shadow: 0 1px 2px rgba(23,40,44,.06), 0 4px 16px rgba(23,40,44,.06);
+  --info: #1f4fd8;
+  --info-soft: #e5ebfd;
+  --put: #9a5b00;
+  --put-soft: #fbeed6;
+
+  --shadow-sm: 0 1px 2px rgba(15, 32, 36, .06);
+  --shadow: 0 1px 2px rgba(15, 32, 36, .05), 0 8px 24px -12px rgba(15, 32, 36, .28);
+  --shadow-lg: 0 28px 64px -34px rgba(15, 32, 36, .5);
+
+  --bar-bg: rgba(244, 247, 248, .82);
+  --hero-1: rgba(13, 139, 141, .20);
+  --hero-2: rgba(37, 99, 235, .13);
+  --hero-line: rgba(15, 32, 36, .05);
 }
 
+/* Dark tokens live in two places on purpose: once for readers who never touched the
+   toggle (system preference), once for readers who explicitly chose dark. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1719;
-    --surface: #162225;
-    --surface-alt: #1c2c30;
-    --border: #2a3d42;
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #0d1618;
+    --surface: #142023;
+    --surface-2: #18272b;
+    --surface-3: #1e3035;
+    --border: #27393e;
+    --border-2: #365055;
+
     --text: #e6f0f1;
-    --text-muted: #9ab0b5;
-    --accent: #35c1c3;
-    --accent-strong: #5ad4d6;
+    --text-muted: #9cb2b7;
+    --text-faint: #7b9198;
+
+    --accent: #34c0c2;
+    --accent-strong: #5ad6d8;
     --accent-soft: #10333a;
-    --code-bg: #0a1214;
+    --accent-line: #1d5157;
+    --accent-contrast: #04191b;
+
+    --code-bg: #081113;
     --code-text: #d7e9ea;
+
     --ok: #4ade80;
-    --err: #ff8a80;
+    --ok-soft: #102b1e;
+    --err: #ff9086;
+    --err-soft: #331916;
     --warn: #f5c451;
     --warn-soft: #2c2412;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    --info: #93b4ff;
+    --info-soft: #14203c;
+    --put: #f0b95f;
+    --put-soft: #2e2410;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px -12px rgba(0, 0, 0, .6);
+    --shadow-lg: 0 28px 64px -34px rgba(0, 0, 0, .8);
+
+    --bar-bg: rgba(13, 22, 24, .78);
+    --hero-1: rgba(52, 192, 194, .16);
+    --hero-2: rgba(96, 141, 255, .12);
+    --hero-line: rgba(230, 240, 241, .05);
   }
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0d1618;
+  --surface: #142023;
+  --surface-2: #18272b;
+  --surface-3: #1e3035;
+  --border: #27393e;
+  --border-2: #365055;
+
+  --text: #e6f0f1;
+  --text-muted: #9cb2b7;
+  --text-faint: #7b9198;
+
+  --accent: #34c0c2;
+  --accent-strong: #5ad6d8;
+  --accent-soft: #10333a;
+  --accent-line: #1d5157;
+  --accent-contrast: #04191b;
+
+  --code-bg: #081113;
+  --code-text: #d7e9ea;
+
+  --ok: #4ade80;
+  --ok-soft: #102b1e;
+  --err: #ff9086;
+  --err-soft: #331916;
+  --warn: #f5c451;
+  --warn-soft: #2c2412;
+  --info: #93b4ff;
+  --info-soft: #14203c;
+  --put: #f0b95f;
+  --put-soft: #2e2410;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px -12px rgba(0, 0, 0, .6);
+  --shadow-lg: 0 28px 64px -34px rgba(0, 0, 0, .8);
+
+  --bar-bg: rgba(13, 22, 24, .78);
+  --hero-1: rgba(52, 192, 194, .16);
+  --hero-2: rgba(96, 141, 255, .12);
+  --hero-line: rgba(230, 240, 241, .05);
+}
+
+/* ============================================================
+   base
+   ============================================================ */
 * { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--bar-h) + 16px);
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-code, pre, input, select, textarea, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+code, pre, kbd, samp, input, select, textarea, .mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
 
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+a { color: var(--accent); }
 [hidden] { display: none !important; }
 
-/* ---------- header ---------- */
-header {
-  background: linear-gradient(160deg, var(--accent-strong), var(--accent));
-  color: #fff;
-  padding: 56px 0 44px;
-  text-align: center;
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
-header h1 { margin: 0 0 10px; font-size: clamp(1.8rem, 4.5vw, 2.7rem); letter-spacing: -.02em; }
-header p { margin: 0 auto; max-width: 42rem; font-size: clamp(1rem, 2.2vw, 1.15rem); opacity: .95; }
 
-.stats { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+.wrap { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 0 22px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip {
+  position: absolute; left: 14px; top: -60px; z-index: 60;
+  background: var(--accent); color: var(--accent-contrast);
+  padding: 10px 16px; border-radius: 0 0 10px 10px;
+  font-size: .88rem; font-weight: 650; text-decoration: none;
+  transition: top .15s ease;
+}
+.skip:focus { top: 0; }
+
+/* ============================================================
+   top bar
+   ============================================================ */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  height: var(--bar-h);
+  background: var(--bar-bg);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.topbar.scrolled { border-bottom-color: var(--border); box-shadow: var(--shadow-sm); }
+
+.bar { display: flex; align-items: center; gap: 18px; height: var(--bar-h); }
+
+.brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--text); text-decoration: none; font-weight: 700;
+  letter-spacing: -.01em; flex: none;
+}
+.brand-mark {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 9px;
+  background: linear-gradient(145deg, var(--accent), var(--accent-strong));
+  color: #fff; font-size: .78rem; font-weight: 700; letter-spacing: -.02em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  box-shadow: 0 2px 10px -3px rgba(13, 139, 141, .7);
+}
+.brand-dim { color: var(--text-faint); font-weight: 500; }
+
+.nav {
+  display: flex; align-items: center; gap: 2px;
+  margin-left: auto; overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav a {
+  position: relative;
+  padding: 7px 12px; border-radius: 8px;
+  color: var(--text-muted); text-decoration: none;
+  font-size: .88rem; font-weight: 550; white-space: nowrap;
+  transition: color .15s ease, background-color .15s ease;
+}
+.nav a:hover { color: var(--text); background: var(--surface-3); }
+.nav a.active { color: var(--accent-strong); background: var(--accent-soft); }
+
+.bar-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+.icon-btn {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; padding: 0;
+  border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface); color: var(--text-muted);
+  cursor: pointer; transition: color .15s ease, border-color .15s ease;
+}
+.icon-btn:hover { color: var(--accent); border-color: var(--accent-line); background: var(--surface); }
+.icon-btn svg { width: 17px; height: 17px; }
+.icon-btn .i-moon { display: none; }
+:root[data-theme="dark"] .icon-btn .i-sun { display: none; }
+:root[data-theme="dark"] .icon-btn .i-moon { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .icon-btn .i-sun { display: none; }
+  :root:not([data-theme="light"]) .icon-btn .i-moon { display: block; }
+}
+
+.bar-cta {
+  display: inline-flex; align-items: center; gap: 7px;
+  max-width: 15rem; padding: 7px 14px;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--surface); color: var(--text);
+  font-size: .84rem; font-weight: 600; text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: border-color .15s ease, color .15s ease;
+}
+.bar-cta:hover { border-color: var(--accent-line); color: var(--accent-strong); }
+
+@media (max-width: 860px) {
+  .nav { order: 3; width: 100%; }
+  .brand-dim { display: none; }
+}
+@media (max-width: 700px) {
+  :root { --bar-h: 58px; }
+  .nav { display: none; }
+  .bar-cta { padding: 7px 12px; }
+}
+
+/* Once the console header has stacked, a full-width Send is a better target than a stub. */
+@media (max-width: 560px) {
+  .console-head #btn-send { flex: 1 1 100%; }
+}
+
+/* ============================================================
+   hero
+   ============================================================ */
+.hero { position: relative; isolation: isolate; padding: clamp(46px, 8vw, 84px) 0 clamp(40px, 6vw, 64px); }
+
+.hero-bg {
+  position: absolute; inset: -20% 0 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(760px 420px at 12% 0%, var(--hero-1), transparent 62%),
+    radial-gradient(680px 400px at 92% 12%, var(--hero-2), transparent 60%);
+}
+.hero-grid {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(var(--hero-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hero-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(720px 380px at 30% 20%, #000, transparent 75%);
+  -webkit-mask-image: radial-gradient(720px 380px at 30% 20%, #000, transparent 75%);
+}
+
+.hero-inner {
+  display: grid; gap: clamp(30px, 5vw, 52px); align-items: center;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, .94fr);
+}
+@media (max-width: 940px) { .hero-inner { grid-template-columns: 1fr; } }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  margin: 0 0 18px; padding: 6px 14px 6px 11px;
+  border: 1px solid var(--accent-line); border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-strong);
+  font-size: .78rem; font-weight: 650; letter-spacing: .01em;
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--accent); box-shadow: 0 0 0 0 var(--accent);
+  animation: pulse 2.4s ease-out infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.hero h1 {
+  margin: 0 0 16px;
+  font-size: clamp(2.1rem, 5.2vw, 3.4rem);
+  line-height: 1.08; letter-spacing: -.035em; font-weight: 760;
+}
+.hero h1 .grad {
+  background: linear-gradient(115deg, var(--accent-strong), var(--accent) 55%, var(--accent-strong));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero-lead {
+  margin: 0 0 26px; max-width: 34rem;
+  font-size: clamp(1.02rem, 1.6vw, 1.14rem); color: var(--text-muted);
+}
+
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 30px; }
+.btn-lg {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 12px 22px; border-radius: 11px;
+  border: 1px solid transparent;
+  font-size: .95rem; font-weight: 650; text-decoration: none;
+  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease;
+}
+.btn-lg.solid {
+  background: var(--accent); color: var(--accent-contrast);
+  box-shadow: 0 10px 24px -12px rgba(13, 139, 141, .9);
+}
+.btn-lg.solid:hover { background: var(--accent-strong); transform: translateY(-1px); }
+.btn-lg.outline { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn-lg.outline:hover { border-color: var(--accent-line); color: var(--accent-strong); transform: translateY(-1px); }
+.btn-lg svg { width: 16px; height: 16px; }
+
+.stats { display: flex; gap: 12px; flex-wrap: wrap; }
 .stat {
-  background: rgba(255,255,255,.14);
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: var(--radius);
-  padding: 12px 22px;
-  min-width: 132px;
+  flex: 1 1 150px; min-width: 140px;
+  padding: 14px 18px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
 }
-.stat .n { display: block; font-size: 1.6rem; font-weight: 650; font-variant-numeric: tabular-nums; }
-.stat .l { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; opacity: .9; }
-
-.jump { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.jump a {
-  color: #fff; text-decoration: none;
-  border: 1px solid rgba(255,255,255,.4); border-radius: 999px;
-  padding: 7px 16px; font-size: .87rem; font-weight: 600;
+.stat .n {
+  display: block; font-size: 1.55rem; font-weight: 700;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.2;
 }
-.jump a:hover { background: rgba(255,255,255,.16); }
+.stat .l {
+  display: block; margin-top: 2px;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .09em;
+  font-weight: 650; color: var(--text-faint);
+}
 
-/* ---------- layout ---------- */
-section { padding: 48px 0; scroll-margin-top: 12px; }
-section + section { border-top: 1px solid var(--border); }
-h2 { font-size: 1.5rem; margin: 0 0 6px; letter-spacing: -.01em; }
-h3 { font-size: 1.05rem; margin: 0 0 10px; }
-.lead { color: var(--text-muted); margin: 0 0 28px; }
+/* terminal preview */
+.terminal {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--code-bg); box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.terminal-bar {
+  display: flex; align-items: center; gap: 7px;
+  padding: 11px 14px; border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .04);
+}
+.tdot { width: 10px; height: 10px; border-radius: 50%; background: #4c6167; }
+.tdot.r { background: #ec6a5e; } .tdot.y { background: #f4bf4f; } .tdot.g { background: #61c554; }
+.terminal-title {
+  margin-left: 6px; color: var(--code-cmt);
+  font: 600 .74rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.terminal-body {
+  margin: 0; padding: 16px 18px;
+  color: var(--code-text); font-size: .82rem; line-height: 1.85;
+  /* Wraps rather than scrolls, the way a real terminal does - a URL clipped at the edge of
+     the card reads as a broken layout. */
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.t-p { color: var(--code-cmt); }
+.t-cmd { color: var(--code-cmd); font-weight: 600; }
+.t-flag { color: var(--code-flag); }
+.t-out { color: var(--code-str); }
+.t-cmt { color: var(--code-cmt); }
 
-.grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+/* ============================================================
+   sections
+   ============================================================ */
+main > section { padding: clamp(48px, 5.5vw, 72px) 0; scroll-margin-top: calc(var(--bar-h) + 16px); }
+main > section + section { border-top: 1px solid var(--border); }
+
+.sec-eyebrow {
+  margin: 0 0 10px;
+  font-size: .74rem; font-weight: 700; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--accent);
+}
+h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; letter-spacing: -.025em;
+}
+h3 { margin: 0 0 10px; font-size: 1.03rem; font-weight: 650; letter-spacing: -.01em; }
+.lead { margin: 0 0 30px; max-width: 46rem; color: var(--text-muted); font-size: 1.02rem; }
+.sub-head { margin: 34px 0 14px; font-size: 1.05rem; font-weight: 650; }
+
+.grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 .grid.two { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 
 .card {
@@ -118,447 +469,527 @@ h3 { font-size: 1.05rem; margin: 0 0 10px; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 22px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
 }
-.card + .card { margin-top: 20px; }
-.card h3 { display: flex; align-items: center; gap: 10px; }
+.card.pad-lg { padding: clamp(22px, 3vw, 30px); }
+
+.feature { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.feature:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--accent-line); }
+.feature .ico {
+  display: grid; place-items: center;
+  width: 38px; height: 38px; margin-bottom: 14px;
+  border-radius: 11px; background: var(--accent-soft); color: var(--accent-strong);
+}
+.feature .ico svg { width: 20px; height: 20px; }
+
 .step {
   display: inline-grid; place-items: center;
-  width: 26px; height: 26px; flex: none;
+  width: 25px; height: 25px; flex: none;
   border-radius: 50%;
   background: var(--accent-soft); color: var(--accent-strong);
-  font-size: .85rem; font-weight: 700;
+  font-size: .8rem; font-weight: 700;
 }
+.card h3.with-step { display: flex; align-items: center; gap: 10px; }
 
-/* ---------- code ---------- */
+/* comparison */
+.compare { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.compare-card { display: flex; flex-direction: column; }
+.compare-card.featured { border-color: var(--accent-line); box-shadow: var(--shadow); }
+.compare-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.compare-card > p.note { margin-top: 0; }
+.compare dl { margin: 16px 0 0; padding-top: 6px; border-top: 1px solid var(--border); }
+.compare dl > div { padding: 11px 0; border-bottom: 1px solid var(--border); }
+.compare dl > div:last-child { border-bottom: 0; padding-bottom: 0; }
+.compare dt {
+  font-size: .72rem; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--text-faint); margin-bottom: 3px;
+}
+.compare dd { margin: 0; font-size: .91rem; }
+.compare dd.mono { font-size: .8rem; word-break: break-all; color: var(--text-muted); }
+
+/* ============================================================
+   code blocks
+   ============================================================ */
 .code {
   position: relative;
-  background: var(--code-bg);
-  color: var(--code-text);
-  border-radius: 9px;
-  padding: 14px 46px 14px 14px;
-  margin: 12px 0 0;
-  overflow-x: auto;
-  font-size: .85rem;
-  line-height: 1.65;
-  white-space: pre;
+  margin: 14px 0 0;
+  padding: 15px 52px 15px 15px;
+  border-radius: var(--radius-sm);
+  background: var(--code-bg); color: var(--code-text);
+  font-size: .82rem; line-height: 1.75;
+  /* Wrapping instead of scrolling keeps long URLs out from under the copy button, which is
+     absolutely positioned and would otherwise sit on top of the first line. */
+  white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .copy {
-  position: absolute; top: 8px; right: 8px;
-  background: rgba(255,255,255,.1); color: var(--code-text);
-  border: 1px solid rgba(255,255,255,.18); border-radius: 6px;
-  padding: 4px 9px; font-size: .72rem; cursor: pointer;
+  position: absolute; top: 9px; right: 9px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, .16); border-radius: 7px;
+  background: rgba(255, 255, 255, .08); color: var(--code-text);
+  font: 600 .71rem/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer; transition: background-color .15s ease;
 }
-.copy:hover { background: rgba(255,255,255,.2); }
-.copy.done { background: var(--ok); border-color: var(--ok); color: #fff; }
-.note { color: var(--text-muted); font-size: .87rem; margin: 10px 0 0; }
-.note.tight { margin-top: 4px; }
+.copy:hover { background: rgba(255, 255, 255, .2); }
+.copy.done { background: #16794a; border-color: #16794a; color: #fff; }
 
-/* ---------- forms ---------- */
+.note { margin: 12px 0 0; color: var(--text-muted); font-size: .88rem; }
+.note.tight { margin-top: 4px; }
+.note code, .lead code, td code, p code {
+  padding: 1px 5px; border-radius: 5px;
+  background: var(--surface-3); font-size: .85em;
+}
+
+/* ============================================================
+   forms
+   ============================================================ */
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
 .row:last-child { margin-bottom: 0; }
-label { font-size: .8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px; }
 .field { flex: 1 1 150px; min-width: 0; }
 .field.wide { flex: 2 1 280px; }
+.field.grow { flex: 1 1 260px; }
 
-input, select, textarea {
-  width: 100%;
-  padding: 9px 11px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-  font-size: .9rem;
+label {
+  display: block; margin-bottom: 5px;
+  font-size: .76rem; font-weight: 650; letter-spacing: .03em;
+  text-transform: uppercase; color: var(--text-faint);
 }
-textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
-input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-input:disabled, select:disabled { opacity: .6; }
+
+input:not([type="checkbox"]), select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text);
+  font-size: .9rem;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+input::placeholder, textarea::placeholder { color: var(--text-faint); }
+textarea { resize: vertical; min-height: 86px; line-height: 1.6; }
+input:not([type="checkbox"]):focus, select:focus, textarea:focus {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+input:disabled, select:disabled { opacity: .55; }
+
+select {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 38px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 17px center, right 12px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
 
 button {
-  padding: 9px 16px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-size: .88rem; font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
+  padding: 10px 17px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--accent); color: var(--accent-contrast);
+  font: 650 .89rem/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer; white-space: nowrap;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;
 }
 button:hover { background: var(--accent-strong); }
-button:disabled { opacity: .55; cursor: not-allowed; }
-button.ghost { background: transparent; color: var(--accent); border-color: var(--border); }
-button.ghost:hover { background: var(--accent-soft); }
-button.link {
-  background: none; border: none; color: var(--accent);
-  padding: 0; font-size: .87rem; text-decoration: underline; font-weight: 600;
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+button.ghost:hover { background: var(--surface-2); border-color: var(--accent-line); color: var(--accent-strong); }
+button.danger { background: transparent; color: var(--err); border-color: var(--border); padding: 6px 12px; font-size: .82rem; }
+button.danger:hover { background: var(--err-soft); border-color: var(--err); color: var(--err); }
+button.busy { position: relative; color: transparent; }
+button.busy::after {
+  content: ""; position: absolute; inset: 0; margin: auto;
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .4);
+  border: 2px solid color-mix(in srgb, var(--accent-contrast) 40%, transparent);
+  border-top-color: var(--accent-contrast);
+  animation: spin .6s linear infinite;
 }
-button.link:hover { background: none; color: var(--accent-strong); }
-button.danger { background: transparent; color: var(--err); border-color: var(--border); }
-button.danger:hover { background: transparent; border-color: var(--err); }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.checkbox { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--text-muted); }
-.checkbox input { width: auto; }
+/* Deliberately inline flow rather than flex: the label mixes text and <code> runs, and as flex
+   items those become columns that cannot wrap into each other on a narrow screen. */
+.checkbox {
+  display: block; margin: 0; line-height: 1.7;
+  font-size: .85rem; font-weight: 500;
+  text-transform: none; letter-spacing: 0; color: var(--text-muted);
+}
+.checkbox input {
+  width: auto; margin: 0 8px 0 0;
+  vertical-align: -2px; accent-color: var(--accent);
+}
 
-/* ---------- output ---------- */
+/* ============================================================
+   console
+   ============================================================ */
+.console { padding: 0; overflow: hidden; }
+.console-head {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 18px clamp(18px, 2.5vw, 24px);
+  background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.console-body { padding: clamp(18px, 2.5vw, 24px); }
+.console-foot {
+  padding: clamp(18px, 2.5vw, 24px);
+  border-top: 1px solid var(--border); background: var(--surface-2);
+}
+.console-foot h3 { margin-bottom: 14px; }
+
+.url-preview {
+  display: block; margin-top: 14px; padding: 11px 13px;
+  border: 1px dashed var(--border-2); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text-muted);
+  font-size: .8rem; white-space: nowrap; overflow-x: auto;
+}
+#params:not(:empty) { margin-top: 18px; }
+#endpoint-desc { min-height: 1.4em; }
+
+.panes { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); margin-top: 18px; }
+.pane { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.pane-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 13px 18px; border-bottom: 1px solid var(--border); background: var(--surface-2);
+  font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint);
+}
+.pane .out, .pane .code { margin: 0; border-radius: 0; flex: 1; }
+.pane .code { border: 0; }
+
 .out {
+  padding: 16px 18px;
   background: var(--code-bg); color: var(--code-text);
-  border-radius: 9px; padding: 13px;
-  font-size: .82rem; white-space: pre-wrap; word-break: break-word;
-  min-height: 3.2rem; margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: .8rem; line-height: 1.7;
+  white-space: pre-wrap; word-break: break-word;
+  min-height: 8.5rem; max-height: 460px; overflow: auto;
 }
-.out .ok { color: var(--ok); }
-.out .err { color: var(--err); }
+/* The response pane is dark in both themes, so these two are fixed rather than tokenised. */
+.out .ok { color: #62d19b; font-weight: 600; }
+.out .err { color: #ff9086; font-weight: 600; }
 
+/* ============================================================
+   banners, pills, verbs
+   ============================================================ */
 .banner {
-  border-radius: 9px; padding: 11px 14px; font-size: .87rem;
-  border: 1px solid var(--border); background: var(--surface-alt);
-  margin-bottom: 14px;
+  padding: 12px 15px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2);
+  font-size: .88rem;
 }
-.banner.ok { border-color: var(--ok); color: var(--ok); background: transparent; }
-.banner.err { border-color: var(--err); color: var(--err); background: transparent; }
-.banner.warn { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
-
-/* ---------- tables ---------- */
-.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .87rem; }
-th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
-th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-td.mono { font-size: .82rem; }
-.verb {
-  display: inline-block; min-width: 46px; text-align: center;
-  padding: 2px 7px; border-radius: 5px;
-  font-size: .7rem; font-weight: 700; letter-spacing: .04em;
-  background: var(--accent-soft); color: var(--accent-strong);
-}
-
-/* app key list */
-table.keys { min-width: 0; }
-table.keys td { vertical-align: middle; }
-table.keys .empty { color: var(--text-muted); font-style: italic; }
-
-footer {
-  padding: 32px 0 44px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: .87rem;
-  border-top: 1px solid var(--border);
-}
-footer a { color: var(--accent); }
+.banner.ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: var(--ok-soft); color: var(--ok); }
+.banner.err { border-color: color-mix(in srgb, var(--err) 45%, transparent); background: var(--err-soft); color: var(--err); }
+.banner.warn { border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: var(--warn-soft); color: var(--warn); }
+#auth-error { margin-top: 16px; }
+#header-msg { margin-top: 14px; }
+#code-banner { margin-bottom: 14px; }
+#auth-off { margin-bottom: 20px; }
 
 .pill {
-  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
   background: var(--accent-soft); color: var(--accent-strong);
-  font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
 }
-.pill.muted { background: var(--surface-alt); color: var(--text-muted); }
+.pill.muted { background: var(--surface-3); color: var(--text-muted); }
 
+.verb {
+  display: inline-block; min-width: 52px; text-align: center;
+  padding: 3px 9px; border-radius: 6px;
+  font: 700 .68rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .05em;
+  background: var(--surface-3); color: var(--text-muted);
+}
+.verb.get { background: var(--accent-soft); color: var(--accent-strong); }
+.verb.post { background: var(--info-soft); color: var(--info); }
+.verb.put { background: var(--put-soft); color: var(--put); }
+.verb.delete { background: var(--err-soft); color: var(--err); }
+#endpoint-verb { min-width: 58px; padding: 6px 10px; font-size: .74rem; }
+
+/* ============================================================
+   tables
+   ============================================================ */
+.table-scroll {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface);
+}
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .88rem; }
+thead th {
+  background: var(--surface-2);
+  font-size: .71rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text-faint);
+}
+th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr { transition: background-color .12s ease; }
+tbody tr:hover { background: var(--surface-2); }
+td.mono { font-size: .82rem; }
+td.path { color: var(--text); }
+
+/* Fixed proportions so the three reference tables line up with each other rather than each
+   sizing itself to its own longest path. */
+#reference th:first-child, #reference td:first-child { width: 96px; }
+#reference th:nth-child(2), #reference td:nth-child(2) { width: 46%; }
+
+table.keys { min-width: 0; }
+table.keys .empty { color: var(--text-faint); font-style: italic; }
+table.keys td.note { margin: 0; }
+
+/* ============================================================
+   account
+   ============================================================ */
 .who {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--border);
 }
 .who .email { font-weight: 650; }
 .who .folder { color: var(--text-muted); font-size: .85rem; }
+.who .spacer { flex: 1; }
+
+.otp-row { align-items: flex-end; }
+#otp { letter-spacing: .5em; font-size: 1.1rem; text-align: center; font-weight: 600; }
+
+/* ============================================================
+   footer
+   ============================================================ */
+footer { border-top: 1px solid var(--border); background: var(--surface-2); padding: 46px 0 34px; }
+.foot {
+  display: grid; gap: 30px; align-items: start;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 720px) { .foot { grid-template-columns: 1fr 1fr; } .foot-about { grid-column: 1 / -1; } }
+.foot-about p { margin: 12px 0 0; color: var(--text-muted); font-size: .88rem; max-width: 26rem; }
+.foot h4 {
+  margin: 0 0 12px;
+  font-size: .73rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-faint);
+}
+.foot ul { list-style: none; margin: 0; padding: 0; }
+.foot li + li { margin-top: 8px; }
+.foot ul a { color: var(--text-muted); text-decoration: none; font-size: .89rem; }
+.foot ul a:hover { color: var(--accent); }
+.foot-bottom {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--border);
+  color: var(--text-faint); font-size: .84rem;
+}
+.foot-bottom p { margin: 0; }
+
+/* ============================================================
+   motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .feature:hover, .btn-lg:hover { transform: none; }
+}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="wrap">
-    <h1>Free Online Key-Value Store</h1>
-    <p>Store a value, read it back from anywhere. No SDK, no database to run &mdash; just HTTP. Start
-       anonymously in one request, or sign up and get a private folder, app keys you can't lose, and
-       an API header of your own.</p>
-    <div class="stats">
-      <div class="stat"><span class="n" id="stat-keys">&mdash;</span><span class="l">Keys stored</span></div>
-      <div class="stat"><span class="n" id="stat-apps">&mdash;</span><span class="l">App keys</span></div>
-    </div>
-    <nav class="jump">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar" id="topbar">
+  <div class="wrap bar">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true">kv</span>
+      <span>KeyValue<span class="brand-dim">.immanuel.co</span></span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="Page sections">
       <a href="#how">How it works</a>
-      <a href="#account">Sign in</a>
+      <a href="#start">Quick start</a>
       <a href="#console">API console</a>
+      <a href="#account">Account</a>
       <a href="#reference">Reference</a>
     </nav>
+
+    <div class="bar-actions">
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Switch colour theme" title="Switch colour theme">
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.6v2.2M12 19.2v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/>
+        </svg>
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.8 13.6A8.6 8.6 0 1 1 10.4 3.2a6.9 6.9 0 0 0 10.4 10.4Z"/>
+        </svg>
+      </button>
+      <a class="bar-cta" id="nav-auth" href="#account">Sign in</a>
+    </div>
   </div>
 </header>
+
+<main id="main">
+
+<!-- ============ hero ============ -->
+<section class="hero" id="top">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-grid" aria-hidden="true"></div>
+
+  <div class="wrap hero-inner">
+    <div>
+      <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Free &middot; no account required</p>
+
+      <h1>Free Online <span class="grad">Key-Value Store</span></h1>
+
+      <p class="hero-lead">Store a value, read it back from anywhere. No SDK, no database to run
+        &mdash; just HTTP. Start anonymously in one request, or sign up and get a private folder,
+        app keys you can't lose, and an API header of your own.</p>
+
+      <div class="hero-cta">
+        <a class="btn-lg solid" href="#start">
+          Quick start
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn-lg outline" href="#console">Open the API console</a>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span class="n" id="stat-keys">&mdash;</span><span class="l">Keys stored</span></div>
+        <div class="stat"><span class="n" id="stat-apps">&mdash;</span><span class="l">App keys</span></div>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span>
+        <span class="terminal-title">terminal</span>
+      </div>
+      <pre class="terminal-body"><span class="t-p">$</span> <span class="t-cmd">curl</span> <span data-base></span>/api/KeyVal/GetAppKey
+<span class="t-out">"3cg7aby9"</span>
+
+<span class="t-p">$</span> <span class="t-cmd">curl</span> <span class="t-flag">-X POST</span> <span data-base></span>/api/KeyVal/UpdateValue/3cg7aby9/greeting/hello
+<span class="t-out">true</span>
+
+<span class="t-p">$</span> <span class="t-cmd">curl</span> <span data-base></span>/api/KeyVal/GetValue/3cg7aby9/greeting
+<span class="t-out">"hello"</span></pre>
+    </div>
+  </div>
+</section>
 
 <!-- ============ what it is ============ -->
 <section id="how">
   <div class="wrap">
-    <h2>What this is</h2>
+    <p class="sec-eyebrow">What this is</p>
+    <h2>A database you never have to run</h2>
     <p class="lead">A key-value pair, stored on a server, reachable over plain HTTP from anything that
-       can make a request &mdash; a web page, a shell script, a device, a spreadsheet.</p>
+      can make a request &mdash; a web page, a shell script, a device, a spreadsheet.</p>
 
     <div class="grid">
-      <div class="card">
-        <h3><span class="step">1</span> An app key is your store</h3>
+      <div class="card feature">
+        <div class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/>
+            <path d="M4.5 5.5v6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-6"/>
+            <path d="M4.5 11.5v6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-6"/>
+          </svg>
+        </div>
+        <h3>An app key is your store</h3>
         <p class="note tight">Every app key gets its own database file. Your reads and writes never
-           contend with anybody else's, and nothing you store is mixed in with another user's data.</p>
+          contend with anybody else's, and nothing you store is mixed in with another user's data.</p>
       </div>
-      <div class="card">
-        <h3><span class="step">2</span> Keys and values</h3>
+
+      <div class="card feature">
+        <div class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8.5 4H7a2.5 2.5 0 0 0-2.5 2.5v3A2.5 2.5 0 0 1 2 12a2.5 2.5 0 0 1 2.5 2.5v3A2.5 2.5 0 0 0 7 20h1.5"/>
+            <path d="M15.5 4H17a2.5 2.5 0 0 1 2.5 2.5v3A2.5 2.5 0 0 0 22 12a2.5 2.5 0 0 0-2.5 2.5v3A2.5 2.5 0 0 1 17 20h-1.5"/>
+            <path d="M9.5 12h5"/>
+          </svg>
+        </div>
+        <h3>Keys and values</h3>
         <p class="note tight">Set a key to a value, read it back, list everything, delete one. Keys go
-           up to 64 characters, values up to 1024.</p>
+          up to 64 characters, values up to 1024.</p>
       </div>
-      <div class="card">
-        <h3><span class="step">3</span> Counters that count</h3>
+
+      <div class="card feature">
+        <div class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7.5 20.5V5"/><path d="M3.5 9l4-4 4 4"/>
+            <path d="M16.5 3.5V19"/><path d="M20.5 15l-4 4-4-4"/>
+          </svg>
+        </div>
+        <h3>Counters that count</h3>
         <p class="note tight">Increment and decrement happen in a single statement, so fifty
-           simultaneous hits land on fifty. A visit counter is one line on page load.</p>
+          simultaneous hits land on fifty. A visit counter is one line on page load.</p>
       </div>
     </div>
 
-    <div class="card" style="margin-top:20px">
-      <h3>Anonymous, or with an account</h3>
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th></th><th>Anonymous</th><th>Signed up</th></tr></thead>
-          <tbody>
-            <tr>
-              <td>Getting started</td>
-              <td>One request, no details given</td>
-              <td>Email plus a code &mdash; no password</td>
-            </tr>
-            <tr>
-              <td>Where data lives</td>
-              <td class="mono">App_Data/3cg7aby9.db</td>
-              <td class="mono">App_Data/you_at_example.com/3cg7aby9.db</td>
-            </tr>
-            <tr>
-              <td>Losing the app key</td>
-              <td>The data is gone &mdash; nothing maps back to it</td>
-              <td>Sign in; every key you own is listed</td>
-            </tr>
-            <tr>
-              <td>Who can read it</td>
-              <td>Anyone who has the app key</td>
-              <td>Only requests carrying your API header</td>
-            </tr>
-            <tr>
-              <td>App keys</td>
-              <td>As many as you ask for</td>
-              <td>Up to ten, each its own database</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="note">Signing up changes nothing about existing anonymous keys &mdash; they keep working
-         exactly as they always have.</p>
+    <h3 class="sub-head">Anonymous, or with an account</h3>
+    <div class="compare">
+      <article class="card compare-card">
+        <div class="compare-head">
+          <span class="pill muted">Anonymous</span>
+        </div>
+        <p class="note tight">Exactly how the service has worked since 2017.</p>
+        <dl>
+          <div><dt>Getting started</dt><dd>One request, no details given</dd></div>
+          <div><dt>Where data lives</dt><dd class="mono">App_Data/3cg7aby9.db</dd></div>
+          <div><dt>Losing the app key</dt><dd>The data is gone &mdash; nothing maps back to it</dd></div>
+          <div><dt>Who can read it</dt><dd>Anyone who has the app key</dd></div>
+          <div><dt>App keys</dt><dd>As many as you ask for</dd></div>
+        </dl>
+      </article>
+
+      <article class="card compare-card featured">
+        <div class="compare-head">
+          <span class="pill">Signed up</span>
+        </div>
+        <p class="note tight">Email plus a code &mdash; there is no password to choose or leak.</p>
+        <dl>
+          <div><dt>Getting started</dt><dd>Email plus a code &mdash; no password</dd></div>
+          <div><dt>Where data lives</dt><dd class="mono">App_Data/you_at_example.com/3cg7aby9.db</dd></div>
+          <div><dt>Losing the app key</dt><dd>Sign in; every key you own is listed</dd></div>
+          <div><dt>Who can read it</dt><dd>Only requests carrying your API header</dd></div>
+          <div><dt>App keys</dt><dd>Up to ten, each its own database</dd></div>
+        </dl>
+      </article>
     </div>
-  </div>
-</section>
-
-<!-- ============ account ============ -->
-<section id="account">
-  <div class="wrap">
-    <h2>Your account</h2>
-    <p class="lead">Sign in with an email address and a six-digit code. There is no password to
-       choose, forget or leak.</p>
-
-    <div id="auth-off" class="banner warn" hidden>
-      Accounts are turned off on this deployment. The anonymous API below works as normal.
-    </div>
-
-    <!-- signed out -->
-    <div id="signed-out" hidden>
-      <div class="grid two">
-        <div class="card">
-          <h3>Sign in</h3>
-          <p class="note tight" style="margin-bottom:14px">Already have an account? We'll send a code.</p>
-          <div class="row">
-            <div class="field wide">
-              <label for="signin-email">Email</label>
-              <input id="signin-email" type="email" placeholder="you@example.com" autocomplete="email" spellcheck="false">
-            </div>
-            <button id="btn-signin">Send code</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Sign up</h3>
-          <p class="note tight" style="margin-bottom:14px">New here? Your folder is created the moment
-             you register.</p>
-          <div class="row">
-            <div class="field wide">
-              <label for="signup-email">Email</label>
-              <input id="signup-email" type="email" placeholder="you@example.com" autocomplete="email" spellcheck="false">
-            </div>
-            <button id="btn-signup">Sign up</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- code entry -->
-      <div class="card" id="code-card" hidden style="margin-top:20px">
-        <h3>Enter your code</h3>
-        <div id="code-banner" class="banner"></div>
-        <div class="row">
-          <div class="field">
-            <label for="otp">Six-digit code</label>
-            <input id="otp" class="mono" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
-          </div>
-          <button id="btn-verify">Verify</button>
-          <button id="btn-resend" class="ghost">Send another</button>
-          <button id="btn-cancel" class="ghost">Cancel</button>
-        </div>
-      </div>
-
-      <div id="auth-error" class="banner err" hidden style="margin-top:16px"></div>
-    </div>
-
-    <!-- signed in -->
-    <div id="signed-in" hidden>
-      <div class="card">
-        <div class="who">
-          <span class="pill">Signed in</span>
-          <span class="email" id="who-email"></span>
-          <span class="folder">folder <code id="who-folder"></code></span>
-          <span style="flex:1"></span>
-          <button id="btn-signout" class="ghost">Sign out</button>
-        </div>
-
-        <div class="grid two">
-          <div>
-            <h3>Your app keys</h3>
-            <p class="note tight" style="margin-bottom:12px">Each one is a separate database inside
-               your folder.</p>
-            <div class="table-scroll">
-              <table class="keys">
-                <thead><tr><th>App key</th><th>Keys</th><th>Created</th><th></th></tr></thead>
-                <tbody id="key-rows"></tbody>
-              </table>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <button id="btn-new-appkey">New app key</button>
-            </div>
-          </div>
-
-          <div>
-            <h3>Your API header</h3>
-            <p class="note tight" style="margin-bottom:12px">Pick any header name and value. Every API
-               call carrying it is treated as yours &mdash; and calls to your app keys are refused
-               without it.</p>
-            <div class="row">
-              <div class="field">
-                <label for="hdr-name">Header name</label>
-                <input id="hdr-name" class="mono" placeholder="x-yourapp-token" spellcheck="false" autocomplete="off">
-              </div>
-            </div>
-            <div class="row">
-              <div class="field wide">
-                <label for="hdr-value">Header value</label>
-                <input id="hdr-value" class="mono" placeholder="something nobody can guess" spellcheck="false" autocomplete="off">
-              </div>
-            </div>
-            <div class="row">
-              <button id="btn-save-header">Save header</button>
-              <button id="btn-suggest-header" class="ghost">Suggest one</button>
-              <button id="btn-clear-header" class="ghost">Remove</button>
-            </div>
-            <div id="header-msg" class="banner" hidden style="margin-top:12px"></div>
-            <p class="note">Treat the value like a password. It is shown here so the console can fill it
-               in for you, which also means anyone who can read this page can use it.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ api console ============ -->
-<section id="console">
-  <div class="wrap">
-    <h2>API console</h2>
-    <p class="lead">Every endpoint, against the live service, with real data. Sign in above and your
-       header and app keys are filled in for you.</p>
-
-    <div class="card">
-      <div class="row">
-        <div class="field wide">
-          <label for="endpoint">Endpoint</label>
-          <select id="endpoint"></select>
-        </div>
-        <button id="btn-send">Send</button>
-      </div>
-      <p class="note tight" id="endpoint-desc"></p>
-
-      <div id="params" style="margin-top:18px"></div>
-
-      <div class="row" id="body-row" hidden>
-        <div class="field wide">
-          <label for="body">Request body (JSON)</label>
-          <textarea id="body" class="mono" spellcheck="false"></textarea>
-        </div>
-      </div>
-
-      <h3 style="margin-top:22px">Headers sent with every call</h3>
-      <div class="row">
-        <div class="field">
-          <label for="con-hdr-name">Header name</label>
-          <input id="con-hdr-name" class="mono" placeholder="x-yourapp-token" spellcheck="false" autocomplete="off">
-        </div>
-        <div class="field wide">
-          <label for="con-hdr-value">Header value</label>
-          <input id="con-hdr-value" class="mono" placeholder="sign in to fill this in" spellcheck="false" autocomplete="off">
-        </div>
-      </div>
-      <div class="row">
-        <label class="checkbox">
-          <input type="checkbox" id="send-bearer"> Also send <code>Authorization: Bearer</code> (needed by
-          <code>/api/v2/me</code>)
-        </label>
-      </div>
-    </div>
-
-    <div class="grid two" style="margin-top:20px">
-      <div class="card">
-        <h3>Response</h3>
-        <div class="out" id="out">Pick an endpoint and press Send&hellip;</div>
-      </div>
-      <div class="card">
-        <h3>The same call as curl</h3>
-        <pre class="code" id="curl"><code id="curl-text">&mdash;</code></pre>
-      </div>
-    </div>
+    <p class="note">Signing up changes nothing about existing anonymous keys &mdash; they keep working
+      exactly as they always have.</p>
   </div>
 </section>
 
 <!-- ============ quick start ============ -->
 <section id="start">
   <div class="wrap">
-    <h2>Quick start</h2>
-    <p class="lead">Three requests, no account needed. Copy them straight into a terminal.</p>
+    <p class="sec-eyebrow">Quick start</p>
+    <h2>Three requests, no account needed</h2>
+    <p class="lead">Copy them straight into a terminal. Every snippet on this page already points at
+      the host you are reading it from.</p>
 
     <div class="grid">
       <div class="card">
-        <h3><span class="step">1</span> Get an app key</h3>
-        <p class="note">Your app key is the handle to your own private store. Keep it &mdash; without an
-           account it cannot be recovered.</p>
-        <pre class="code" data-copy>curl <span data-base></span>/api/KeyVal/GetAppKey
+        <h3 class="with-step"><span class="step">1</span> Get an app key</h3>
+        <p class="note tight">Your app key is the handle to your own private store. Keep it &mdash; without
+          an account it cannot be recovered.</p>
+        <pre class="code" data-copy><span class="t-cmd">curl</span> <span data-base></span>/api/KeyVal/GetAppKey
 
-# "3cg7aby9"</pre>
+<span class="t-cmt"># "3cg7aby9"</span></pre>
       </div>
 
       <div class="card">
-        <h3><span class="step">2</span> Store a value</h3>
-        <p class="note">Key up to 64 characters, value up to 1024.</p>
-        <pre class="code" data-copy>curl -X POST \
+        <h3 class="with-step"><span class="step">2</span> Store a value</h3>
+        <p class="note tight">Key up to 64 characters, value up to 1024.</p>
+        <pre class="code" data-copy><span class="t-cmd">curl</span> <span class="t-flag">-X POST</span> \
   <span data-base></span>/api/KeyVal/UpdateValue/3cg7aby9/yourkey/yourvalue
 
-# true</pre>
+<span class="t-cmt"># true</span></pre>
       </div>
 
       <div class="card">
-        <h3><span class="step">3</span> Read it back</h3>
-        <p class="note">Returns an empty string when the key has never been set.</p>
-        <pre class="code" data-copy>curl <span data-base></span>/api/KeyVal/GetValue/3cg7aby9/yourkey
+        <h3 class="with-step"><span class="step">3</span> Read it back</h3>
+        <p class="note tight">Returns an empty string when the key has never been set.</p>
+        <pre class="code" data-copy><span class="t-cmd">curl</span> <span data-base></span>/api/KeyVal/GetValue/3cg7aby9/yourkey
 
-# "yourvalue"</pre>
+<span class="t-cmt"># "yourvalue"</span></pre>
       </div>
     </div>
 
-    <div class="card" style="margin-top:20px">
+    <div class="card pad-lg" style="margin-top:18px">
       <h3>From JavaScript, with an account</h3>
       <p class="note tight">One header on every request. Swap in the name and value from your account
-         panel.</p>
+        panel.</p>
       <pre class="code" data-copy>&lt;script&gt;
 const KV_BASE = "<span data-base></span>";
 const KV_APPKEY = "3cg7aby9";
@@ -588,7 +1019,191 @@ async function increment(key, by = 1) {
 }
 &lt;/script&gt;</pre>
       <p class="note">Leave <code>KV_HEADERS</code> out entirely and the same code works against an
-         anonymous app key.</p>
+        anonymous app key.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ api console ============ -->
+<section id="console">
+  <div class="wrap">
+    <p class="sec-eyebrow">Try it live</p>
+    <h2>API console</h2>
+    <p class="lead">Every endpoint, against the live service, with real data. Sign in below and your
+      header and app keys are filled in for you.</p>
+
+    <div class="card console">
+      <div class="console-head">
+        <span class="verb get" id="endpoint-verb">GET</span>
+        <div class="field grow">
+          <label for="endpoint" class="sr-only">Endpoint</label>
+          <select id="endpoint"></select>
+        </div>
+        <button id="btn-send">Send request</button>
+      </div>
+
+      <div class="console-body">
+        <p class="note tight" id="endpoint-desc"></p>
+        <code class="url-preview mono" id="endpoint-url">&mdash;</code>
+
+        <div id="params"></div>
+
+        <div class="row" id="body-row" hidden>
+          <div class="field wide">
+            <label for="body">Request body (JSON)</label>
+            <textarea id="body" class="mono" spellcheck="false"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="console-foot">
+        <h3>Headers sent with every call</h3>
+        <div class="row">
+          <div class="field">
+            <label for="con-hdr-name">Header name</label>
+            <input id="con-hdr-name" class="mono" placeholder="x-yourapp-token" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="field wide">
+            <label for="con-hdr-value">Header value</label>
+            <input id="con-hdr-value" class="mono" placeholder="sign in to fill this in" spellcheck="false" autocomplete="off">
+          </div>
+        </div>
+        <div class="row">
+          <label class="checkbox">
+            <input type="checkbox" id="send-bearer"> Also send <code>Authorization: Bearer</code> (needed by
+            <code>/api/v2/me</code>)
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panes">
+      <div class="card pane">
+        <div class="pane-head">Response</div>
+        <div class="out" id="out">Pick an endpoint and press Send&hellip;</div>
+      </div>
+      <div class="card pane">
+        <div class="pane-head">The same call as curl</div>
+        <pre class="code" id="curl"><code id="curl-text">&mdash;</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ account ============ -->
+<section id="account">
+  <div class="wrap">
+    <p class="sec-eyebrow">Accounts</p>
+    <h2>Your account</h2>
+    <p class="lead">Sign in with an email address and a six-digit code. There is no password to
+      choose, forget or leak.</p>
+
+    <div id="auth-off" class="banner warn" hidden>
+      Accounts are turned off on this deployment. The anonymous API above works as normal.
+    </div>
+
+    <!-- signed out -->
+    <div id="signed-out" hidden>
+      <div class="grid two">
+        <div class="card">
+          <h3>Sign in</h3>
+          <p class="note tight" style="margin-bottom:16px">Already have an account? We'll send a code.</p>
+          <div class="row">
+            <div class="field wide">
+              <label for="signin-email">Email</label>
+              <input id="signin-email" type="email" placeholder="you@example.com" autocomplete="email" spellcheck="false">
+            </div>
+            <button id="btn-signin">Send code</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Sign up</h3>
+          <p class="note tight" style="margin-bottom:16px">New here? Your folder is created the moment
+            you register.</p>
+          <div class="row">
+            <div class="field wide">
+              <label for="signup-email">Email</label>
+              <input id="signup-email" type="email" placeholder="you@example.com" autocomplete="email" spellcheck="false">
+            </div>
+            <button id="btn-signup">Sign up</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- code entry -->
+      <div class="card" id="code-card" hidden style="margin-top:18px">
+        <h3>Enter your code</h3>
+        <div id="code-banner" class="banner"></div>
+        <div class="row otp-row">
+          <div class="field">
+            <label for="otp">Six-digit code</label>
+            <input id="otp" class="mono" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+          </div>
+          <button id="btn-verify">Verify</button>
+          <button id="btn-resend" class="ghost">Send another</button>
+          <button id="btn-cancel" class="ghost">Cancel</button>
+        </div>
+      </div>
+
+      <div id="auth-error" class="banner err" hidden></div>
+    </div>
+
+    <!-- signed in -->
+    <div id="signed-in" hidden>
+      <div class="card pad-lg">
+        <div class="who">
+          <span class="pill">Signed in</span>
+          <span class="email" id="who-email"></span>
+          <span class="folder">folder <code id="who-folder"></code></span>
+          <span class="spacer"></span>
+          <button id="btn-signout" class="ghost">Sign out</button>
+        </div>
+
+        <div class="grid two">
+          <div>
+            <h3>Your app keys</h3>
+            <p class="note tight" style="margin-bottom:14px">Each one is a separate database inside
+              your folder.</p>
+            <div class="table-scroll">
+              <table class="keys">
+                <thead><tr><th>App key</th><th>Keys</th><th>Created</th><th></th></tr></thead>
+                <tbody id="key-rows"></tbody>
+              </table>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <button id="btn-new-appkey">New app key</button>
+            </div>
+          </div>
+
+          <div>
+            <h3>Your API header</h3>
+            <p class="note tight" style="margin-bottom:14px">Pick any header name and value. Every API
+              call carrying it is treated as yours &mdash; and calls to your app keys are refused
+              without it.</p>
+            <div class="row">
+              <div class="field">
+                <label for="hdr-name">Header name</label>
+                <input id="hdr-name" class="mono" placeholder="x-yourapp-token" spellcheck="false" autocomplete="off">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field wide">
+                <label for="hdr-value">Header value</label>
+                <input id="hdr-value" class="mono" placeholder="something nobody can guess" spellcheck="false" autocomplete="off">
+              </div>
+            </div>
+            <div class="row">
+              <button id="btn-save-header">Save header</button>
+              <button id="btn-suggest-header" class="ghost">Suggest one</button>
+              <button id="btn-clear-header" class="ghost">Remove</button>
+            </div>
+            <div id="header-msg" class="banner" hidden></div>
+            <p class="note">Treat the value like a password. It is shown here so the console can fill it
+              in for you, which also means anyone who can read this page can use it.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -596,65 +1211,66 @@ async function increment(key, by = 1) {
 <!-- ============ api reference ============ -->
 <section id="reference">
   <div class="wrap">
-    <h2>API reference</h2>
+    <p class="sec-eyebrow">Reference</p>
+    <h2>Every endpoint</h2>
     <p class="lead">
       <span class="pill">v1</span> is the original API, unchanged and supported indefinitely.
       <span class="pill">v2</span> adds listing, deleting, bigger values and richer responses.
       <span class="pill muted">auth</span> is new and only concerns accounts.
     </p>
 
-    <h3 style="margin-top:24px">v1 &mdash; unchanged since 2017</h3>
+    <h3 class="sub-head">v1 &mdash; unchanged since 2017</h3>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Does</th></tr></thead>
         <tbody>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/KeyVal/GetAppKey</td><td>Issue a new app key</td></tr>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/KeyVal/GetValue/{appkey}/{key}</td><td>Read a value, or <code>""</code></td></tr>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/KeyVal/UpdateValue/{appkey}/{key}/{value}</td><td>Create or overwrite</td></tr>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/KeyVal/ActOnValue/{appkey}/{key}/{action}</td><td><code>increment</code> or <code>decrement</code></td></tr>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/KeyVal/GetCount</td><td>Keys stored service-wide</td></tr>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/KeyVal/GetIp</td><td>Your IP as the server sees it</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/KeyVal/GetAppKey</td><td>Issue a new app key</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/KeyVal/GetValue/{appkey}/{key}</td><td>Read a value, or <code>""</code></td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/KeyVal/UpdateValue/{appkey}/{key}/{value}</td><td>Create or overwrite</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/KeyVal/ActOnValue/{appkey}/{key}/{action}</td><td><code>increment</code> or <code>decrement</code></td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/KeyVal/GetCount</td><td>Keys stored service-wide</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/KeyVal/GetIp</td><td>Your IP as the server sees it</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3 style="margin-top:30px">v2 &mdash; recommended for new code</h3>
+    <h3 class="sub-head">v2 &mdash; recommended for new code</h3>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Does</th></tr></thead>
         <tbody>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/appkeys</td><td>Issue an app key &mdash; to your account when your header is sent</td></tr>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}</td><td>Key count and timestamps</td></tr>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys</td><td>List everything you stored</td></tr>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Read one key with timestamps</td></tr>
-          <tr><td><span class="verb">PUT</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Set from a JSON body: <code>{"value":"..."}</code></td></tr>
-          <tr><td><span class="verb">DEL</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Remove a key</td></tr>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}/increment</td><td>Step by <code>{"by":n}</code>, default 1</td></tr>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/stats</td><td>Service-wide totals</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/v2/appkeys</td><td>Issue an app key &mdash; to your account when your header is sent</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/v2/appkeys/{appkey}</td><td>Key count and timestamps</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/v2/appkeys/{appkey}/keys</td><td>List everything you stored</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Read one key with timestamps</td></tr>
+          <tr><td><span class="verb put">PUT</span></td><td class="mono path">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Set from a JSON body: <code>{"value":"..."}</code></td></tr>
+          <tr><td><span class="verb delete">DEL</span></td><td class="mono path">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Remove a key</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/v2/appkeys/{appkey}/keys/{key}/increment</td><td>Step by <code>{"by":n}</code>, default 1</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/v2/stats</td><td>Service-wide totals</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3 style="margin-top:30px">Accounts</h3>
+    <h3 class="sub-head">Accounts</h3>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Does</th></tr></thead>
         <tbody>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/auth/state</td><td>Whether accounts are on, and how codes are delivered</td></tr>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/auth/signup</td><td>Register an address and send it a code</td></tr>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/auth/signin</td><td>Send a code to an existing account</td></tr>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/auth/verify</td><td>Exchange the code for a session token</td></tr>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/auth/signout</td><td>End the session</td></tr>
-          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/me</td><td>Your account, app keys and API header</td></tr>
-          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/me/appkeys</td><td>Issue an app key into your folder</td></tr>
-          <tr><td><span class="verb">DEL</span></td><td class="mono">/api/v2/me/appkeys/{appkey}</td><td>Delete an app key and everything under it</td></tr>
-          <tr><td><span class="verb">PUT</span></td><td class="mono">/api/v2/me/header</td><td>Set the custom header: <code>{"name":"...","value":"..."}</code></td></tr>
-          <tr><td><span class="verb">DEL</span></td><td class="mono">/api/v2/me/header</td><td>Remove it</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/v2/auth/state</td><td>Whether accounts are on, and how codes are delivered</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/v2/auth/signup</td><td>Register an address and send it a code</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/v2/auth/signin</td><td>Send a code to an existing account</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/v2/auth/verify</td><td>Exchange the code for a session token</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/v2/auth/signout</td><td>End the session</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td class="mono path">/api/v2/me</td><td>Your account, app keys and API header</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td class="mono path">/api/v2/me/appkeys</td><td>Issue an app key into your folder</td></tr>
+          <tr><td><span class="verb delete">DEL</span></td><td class="mono path">/api/v2/me/appkeys/{appkey}</td><td>Delete an app key and everything under it</td></tr>
+          <tr><td><span class="verb put">PUT</span></td><td class="mono path">/api/v2/me/header</td><td>Set the custom header: <code>{"name":"...","value":"..."}</code></td></tr>
+          <tr><td><span class="verb delete">DEL</span></td><td class="mono path">/api/v2/me/header</td><td>Remove it</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="note" style="margin-top:18px">
+    <p class="note">
       Routes under <code>/api/v2/me</code> need the session token from <code>verify</code> in
       <code>Authorization: Bearer</code>, not the custom header &mdash; so a leaked API header cannot
       mint more app keys or rewrite itself. Failures are RFC 9457 problem documents. Machine-readable
@@ -663,11 +1279,45 @@ async function increment(key, by = 1) {
   </div>
 </section>
 
+</main>
+
 <footer>
   <div class="wrap">
-    Free to use, no warranty. An anonymous app key is readable by anyone who has it &mdash; don't store
-    secrets in one.<br>
-    <a href="https://www.immanuel.co">immanuel.co</a> &middot; <a href="/health">status</a>
+    <div class="foot">
+      <div class="foot-about">
+        <a class="brand" href="#top">
+          <span class="brand-mark" aria-hidden="true">kv</span>
+          <span>KeyValue<span class="brand-dim">.immanuel.co</span></span>
+        </a>
+        <p>Free to use, no warranty. An anonymous app key is readable by anyone who has it &mdash;
+          don't store secrets in one.</p>
+      </div>
+
+      <div>
+        <h4>API</h4>
+        <ul>
+          <li><a href="#start">Quick start</a></li>
+          <li><a href="#console">API console</a></li>
+          <li><a href="#reference">Reference</a></li>
+          <li><a href="/openapi/v1.json">OpenAPI schema</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Service</h4>
+        <ul>
+          <li><a href="#account">Sign in</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="/health">Status</a></li>
+          <li><a href="https://www.immanuel.co">immanuel.co</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="foot-bottom">
+      <p>&copy; Immanuel &middot; a free key-value store since 2017.</p>
+      <p>v1 endpoints still answer at the same URLs.</p>
+    </div>
   </div>
 </footer>
 
@@ -679,6 +1329,7 @@ const $ = id => document.getElementById(id);
 
 const TOKEN_KEY = 'immanuel.keyvalue.token';
 const APPKEY_KEY = 'immanuel.keyvalue.appkey';
+const THEME_KEY = 'immanuel.keyvalue.theme';
 
 // Everything the page knows about who is signed in. `account` is the /api/v2/me payload.
 const state = { token: null, account: null, pending: null, delivery: 'master' };
@@ -742,6 +1393,31 @@ function authed(method, path, body) {
   return request(method, path, { body, headers: state.token ? { Authorization: 'Bearer ' + state.token } : {} });
 }
 
+// ---------- theme ----------
+
+const darkMedia = matchMedia('(prefers-color-scheme: dark)');
+
+/** What the reader is actually looking at: their explicit choice, or the system's. */
+function currentTheme() {
+  return document.documentElement.dataset.theme || (darkMedia.matches ? 'dark' : 'light');
+}
+
+function labelThemeToggle() {
+  $('theme-toggle').setAttribute('aria-label',
+    currentTheme() === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme');
+}
+
+/** Only a click stores a preference - until then the page keeps following the system. */
+function applyTheme(mode) {
+  document.documentElement.dataset.theme = mode;
+  store(THEME_KEY, mode);
+  labelThemeToggle();
+}
+
+$('theme-toggle').addEventListener('click', () => applyTheme(currentTheme() === 'dark' ? 'light' : 'dark'));
+darkMedia.addEventListener('change', labelThemeToggle);
+labelThemeToggle();
+
 // ---------- copy buttons ----------
 
 function attachCopy(block, source) {
@@ -785,6 +1461,7 @@ async function loadAuthState() {
     show($('auth-off'), true);
     show($('signed-out'), false);
     show($('signed-in'), false);
+    show($('nav-auth'), false);
     return;
   }
 
@@ -878,6 +1555,9 @@ function renderAccount() {
 
   show($('signed-in'), signedIn);
   show($('signed-out'), !signedIn);
+
+  // The top bar mirrors the panel: the address when there is one, the invitation when there isn't.
+  $('nav-auth').textContent = signedIn ? state.account.email : 'Sign in';
 
   if (signedIn) {
     $('who-email').textContent = state.account.email;
@@ -1057,6 +1737,11 @@ function renderParams() {
 
   $('endpoint-desc').textContent = endpoint.desc || '';
 
+  // DELETE is spelled DEL on the badge so it stays the same width as the rest.
+  const verb = $('endpoint-verb');
+  verb.className = 'verb ' + endpoint.method.toLowerCase();
+  verb.textContent = endpoint.method === 'DELETE' ? 'DEL' : endpoint.method;
+
   host.innerHTML = endpoint.params.length === 0
     ? ''
     : '<div class="row">' + endpoint.params.map(name => `
@@ -1155,6 +1840,7 @@ function updateCurl() {
   lines.push(`  ${BASE}${resolvedPath()}`);
 
   $('curl-text').textContent = lines.join('\n');
+  $('endpoint-url').textContent = BASE + resolvedPath();
 }
 
 async function send() {
@@ -1172,6 +1858,10 @@ async function send() {
   }
 
   out.textContent = 'Sending…';
+
+  const btn = $('btn-send');
+  btn.disabled = true;
+  btn.classList.add('busy');
 
   try {
     const res = await request(endpoint.method, resolvedPath(), { body, headers: consoleHeaders() });
@@ -1196,6 +1886,9 @@ async function send() {
     }
   } catch (err) {
     out.innerHTML = `<span class="err">&#10007; Request failed</span>\n\n${escapeHtml(String(err))}`;
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('busy');
   }
 }
 
@@ -1211,6 +1904,44 @@ async function refreshStats() {
     $('stat-apps').textContent = stats.appKeys.toLocaleString();
   } catch { /* the page is still perfectly usable without the counters */ }
 }
+
+// ---------- chrome: sticky bar and section highlighting ----------
+
+const topbar = $('topbar');
+const navLinks = Array.from(document.querySelectorAll('.nav a[href^="#"]'));
+const sections = navLinks
+  .map(link => document.getElementById(link.getAttribute('href').slice(1)))
+  .filter(Boolean);
+
+/**
+ * The last section whose top has passed a line a third of the way down the viewport is the one
+ * being read. Computed from scroll position rather than observed, so a jump straight to an
+ * anchor lands on the same answer as scrolling there by hand, and nothing is highlighted while
+ * the reader is still on the hero.
+ */
+function markActiveSection() {
+  const line = innerHeight * 0.34;
+  let current = null;
+
+  sections.forEach(section => {
+    if (section.getBoundingClientRect().top <= line) current = section;
+  });
+
+  navLinks.forEach(link =>
+    link.classList.toggle('active', Boolean(current) && link.getAttribute('href') === '#' + current.id));
+}
+
+let ticking = false;
+
+addEventListener('scroll', () => {
+  topbar.classList.toggle('scrolled', scrollY > 8);
+
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => { markActiveSection(); ticking = false; });
+}, { passive: true });
+
+markActiveSection();
 
 // ---------- wiring ----------
 
