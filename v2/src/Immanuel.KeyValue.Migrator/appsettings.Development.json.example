@@ -1,0 +1,15 @@
+{
+  "//": "Copy this file to appsettings.Development.json and fill in the connection string.",
+  "//_": "That file is git-ignored, so the credential never reaches the repository.",
+
+  "//server": "Use host,1433 - NOT host\\INSTANCENAME. Named-instance lookup needs UDP 1434, which is normally blocked over the internet and fails with 'error 26'.",
+
+  "ConnectionStrings": {
+    "KeyValueSource": "Server=your-host,1433;Database=immanuel_kv;User Id=your-user;Password=your-password;TrustServerCertificate=True;Connect Timeout=30;"
+  },
+
+  "KeyValue": {
+    "DataDirectory": "../Immanuel.KeyValue.Web/App_Data",
+    "Table": "[immanuel_sa].[KeyVal]"
+  }
+}

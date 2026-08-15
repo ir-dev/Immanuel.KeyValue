@@ -3,6 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+packages/
+
 # User-specific files
 *.rsuser
 *.suo
@@ -332,3 +334,18 @@ ASALocalRun/
 
 # Local History for Visual Studio
 .localhistory/
+
+# graphify-axet
+.graphify/
+
+# v2 runtime data: one SQLite database per app key. This is live user data - it belongs
+# on the server's disk (or a mounted volume), never in the repository.
+v2/**/App_Data/
+*.db
+*.db-shm
+*.db-wal
+
+# Local development settings. These hold real connection strings, so they stay on the
+# machine that needs them. appsettings.Development.json.example is committed as a template.
+appsettings.Development.json
+!appsettings.Development.json.example

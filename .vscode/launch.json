@@ -1,0 +1,56 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // F5 default: builds, starts the API, and opens the landing page once it is listening.
+      "name": "Web (v2)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-web",
+      "program": "${workspaceFolder}/v2/src/Immanuel.KeyValue.Web/bin/Debug/net10.0/Immanuel.KeyValue.Web.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/v2/src/Immanuel.KeyValue.Web",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5086"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+        "uriFormat": "%s"
+      }
+    },
+    {
+      // Reads and reports; writes nothing. Always run this before a real migration.
+      "name": "Migrator (dry run)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-migrator",
+      "program": "${workspaceFolder}/v2/src/Immanuel.KeyValue.Migrator/bin/Debug/net10.0/Immanuel.KeyValue.Migrator.dll",
+      "args": ["--dry-run"],
+      "cwd": "${workspaceFolder}/v2/src/Immanuel.KeyValue.Migrator",
+      "stopAtEntry": false,
+      // A terminal, not the debug console, so the report is readable and scrollable.
+      "console": "integratedTerminal",
+      "env": { "DOTNET_ENVIRONMENT": "Development" }
+    },
+    {
+      // Writes into the web app's App_Data. Only run this after a clean dry run.
+      "name": "Migrator (write)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-migrator",
+      "program": "${workspaceFolder}/v2/src/Immanuel.KeyValue.Migrator/bin/Debug/net10.0/Immanuel.KeyValue.Migrator.dll",
+      "args": [
+        "--data-dir",
+        "${workspaceFolder}/v2/src/Immanuel.KeyValue.Web/App_Data"
+      ],
+      "cwd": "${workspaceFolder}/v2/src/Immanuel.KeyValue.Migrator",
+      "stopAtEntry": false,
+      "console": "integratedTerminal",
+      "env": { "DOTNET_ENVIRONMENT": "Development" }
+    }
+  ]
+}

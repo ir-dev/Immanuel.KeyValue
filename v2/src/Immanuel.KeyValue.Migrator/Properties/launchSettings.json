@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "dry-run": {
+      "commandName": "Project",
+      "commandLineArgs": "--dry-run",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "migrate": {
+      "commandName": "Project",
+      "commandLineArgs": "--data-dir ../Immanuel.KeyValue.Web/App_Data",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "help": {
+      "commandName": "Project",
+      "commandLineArgs": "--help"
+    }
+  }
+}

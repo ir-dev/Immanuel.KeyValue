@@ -1,0 +1,22 @@
+{
+  "//": "Copy to appsettings.Development.json for local overrides. That file is git-ignored.",
+  "//_": "The app runs fine without it - everything here just overrides appsettings.json.",
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+
+  "KeyValue": {
+    "//": "Point at a scratch folder so local testing never touches real data.",
+    "DataDirectory": "App_Data",
+    "AutoCreateUnknownAppKeys": false
+  },
+
+  "RateLimit": {
+    "//": "Usually worth turning off while developing.",
+    "Enabled": false
+  }
+}

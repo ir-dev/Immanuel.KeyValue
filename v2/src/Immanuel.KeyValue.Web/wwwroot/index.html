@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Online Key-Value Store | A persistent key-value store | Immanuel</title>
+
+<meta name="description" content="A free, persistent key-value store you can call over HTTP. No sign-up, no API keys to manage - grab an app key and start storing values.">
+<meta name="keywords" content="key value pair, app settings, online store, online key value pair, free online, REST, API">
+<meta name="robots" content="index, follow">
+<meta name="rating" content="General">
+<meta name="identifier-url" content="https://www.immanuel.co">
+<meta name="Language" content="en, en-us, en-gb, en-bz, en-za">
+<meta property="og:url" content="https://keyvalue.immanuel.co/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Online Key-Value Store">
+<meta property="og:description" content="Key value pair store, online, completely free. Stores and maintains key value pairs.">
+<link rel="shortcut icon" type="image/png" href="/favicon.ico">
+
+<style>
+:root {
+  --bg: #f4f7f8;
+  --surface: #ffffff;
+  --surface-alt: #eef3f4;
+  --border: #d5dfe1;
+  --text: #17282c;
+  --text-muted: #5c7076;
+  --accent: #0f8b8d;
+  --accent-strong: #0a6d6f;
+  --accent-soft: #dff1f1;
+  --code-bg: #17282c;
+  --code-text: #e6f2f2;
+  --ok: #1a7f4b;
+  --err: #b3261e;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(23,40,44,.06), 0 4px 16px rgba(23,40,44,.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1719;
+    --surface: #162225;
+    --surface-alt: #1c2c30;
+    --border: #2a3d42;
+    --text: #e6f0f1;
+    --text-muted: #9ab0b5;
+    --accent: #35c1c3;
+    --accent-strong: #5ad4d6;
+    --accent-soft: #10333a;
+    --code-bg: #0a1214;
+    --code-text: #d7e9ea;
+    --ok: #4ade80;
+    --err: #ff8a80;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+code, pre, input, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+/* ---------- header ---------- */
+header {
+  background: linear-gradient(160deg, var(--accent-strong), var(--accent));
+  color: #fff;
+  padding: 56px 0 44px;
+  text-align: center;
+}
+header h1 { margin: 0 0 10px; font-size: clamp(1.8rem, 4.5vw, 2.7rem); letter-spacing: -.02em; }
+header p { margin: 0 auto; max-width: 40rem; font-size: clamp(1rem, 2.2vw, 1.15rem); opacity: .95; }
+
+.stats { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+.stat {
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: var(--radius);
+  padding: 12px 22px;
+  min-width: 132px;
+}
+.stat .n { display: block; font-size: 1.6rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.stat .l { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; opacity: .9; }
+
+/* ---------- layout ---------- */
+section { padding: 48px 0; }
+section + section { border-top: 1px solid var(--border); }
+h2 { font-size: 1.5rem; margin: 0 0 6px; letter-spacing: -.01em; }
+h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.lead { color: var(--text-muted); margin: 0 0 28px; }
+
+.grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+.card h3 { display: flex; align-items: center; gap: 10px; }
+.step {
+  display: inline-grid; place-items: center;
+  width: 26px; height: 26px; flex: none;
+  border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent-strong);
+  font-size: .85rem; font-weight: 700;
+}
+
+/* ---------- code ---------- */
+.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-text);
+  border-radius: 9px;
+  padding: 14px 46px 14px 14px;
+  margin: 12px 0 0;
+  overflow-x: auto;
+  font-size: .85rem;
+  line-height: 1.65;
+  white-space: pre;
+}
+.copy {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(255,255,255,.1); color: var(--code-text);
+  border: 1px solid rgba(255,255,255,.18); border-radius: 6px;
+  padding: 4px 9px; font-size: .72rem; cursor: pointer;
+}
+.copy:hover { background: rgba(255,255,255,.2); }
+.copy.done { background: var(--ok); border-color: var(--ok); color: #fff; }
+.note { color: var(--text-muted); font-size: .87rem; margin: 10px 0 0; }
+
+/* ---------- console ---------- */
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+label { font-size: .8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px; }
+.field { flex: 1 1 130px; min-width: 0; }
+
+input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: .9rem;
+}
+input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+button {
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: .88rem; font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:hover { background: var(--accent-strong); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+button.ghost { background: transparent; color: var(--accent); border-color: var(--border); }
+button.ghost:hover { background: var(--accent-soft); }
+
+.out {
+  background: var(--code-bg); color: var(--code-text);
+  border-radius: 9px; padding: 13px;
+  font-size: .82rem; white-space: pre-wrap; word-break: break-word;
+  min-height: 3.2rem; margin-top: 6px;
+}
+.out .ok { color: var(--ok); }
+.out .err { color: var(--err); }
+
+/* ---------- reference table ---------- */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .87rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+td.mono { font-size: .82rem; }
+.verb {
+  display: inline-block; min-width: 46px; text-align: center;
+  padding: 2px 7px; border-radius: 5px;
+  font-size: .7rem; font-weight: 700; letter-spacing: .04em;
+  background: var(--accent-soft); color: var(--accent-strong);
+}
+
+footer {
+  padding: 32px 0 44px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: .87rem;
+  border-top: 1px solid var(--border);
+}
+footer a { color: var(--accent); }
+
+.pill {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-strong);
+  font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Free Online Key-Value Store</h1>
+    <p>Store a value, read it back from anywhere. No sign-up, no billing, no SDK &mdash; just HTTP. Manage settings, counters and visitor counts in a few lines of code.</p>
+    <div class="stats">
+      <div class="stat"><span class="n" id="stat-keys">&mdash;</span><span class="l">Keys stored</span></div>
+      <div class="stat"><span class="n" id="stat-apps">&mdash;</span><span class="l">App keys</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ quick start ============ -->
+<section>
+  <div class="wrap">
+    <h2>Quick start</h2>
+    <p class="lead">Three requests. Copy them straight into a terminal.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h3><span class="step">1</span> Get an app key</h3>
+        <p class="note">Your app key is the handle to your own private store. Keep it &mdash; it cannot be recovered.</p>
+        <pre class="code" data-copy>curl <span data-base></span>/api/KeyVal/GetAppKey
+
+# "3cg7aby9"</pre>
+      </div>
+
+      <div class="card">
+        <h3><span class="step">2</span> Store a value</h3>
+        <p class="note">Key up to 64 characters, value up to 1024.</p>
+        <pre class="code" data-copy>curl -X POST \
+  <span data-base></span>/api/KeyVal/UpdateValue/3cg7aby9/yourkey/yourvalue
+
+# true</pre>
+      </div>
+
+      <div class="card">
+        <h3><span class="step">3</span> Read it back</h3>
+        <p class="note">Returns an empty string when the key has never been set.</p>
+        <pre class="code" data-copy>curl <span data-base></span>/api/KeyVal/GetValue/3cg7aby9/yourkey
+
+# "yourvalue"</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ try it ============ -->
+<section>
+  <div class="wrap">
+    <h2>Try it here</h2>
+    <p class="lead">The same calls, against the live service. Start by getting a key.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Your app key</h3>
+        <div class="row">
+          <div class="field">
+            <label for="appkey">App key</label>
+            <input id="appkey" class="mono" placeholder="8 characters" maxlength="8" autocomplete="off" spellcheck="false">
+          </div>
+          <button id="btn-key" style="align-self:flex-end">Get app key</button>
+        </div>
+        <p class="note">Kept in this browser only, so it survives a refresh. Nothing is sent anywhere else.</p>
+      </div>
+
+      <div class="card">
+        <h3>Store &amp; read</h3>
+        <div class="row">
+          <div class="field">
+            <label for="k">Key</label>
+            <input id="k" class="mono" placeholder="yourkey" maxlength="64" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="v">Value</label>
+            <input id="v" class="mono" placeholder="yourvalue" maxlength="1024" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <div class="row">
+          <button id="btn-set">Store</button>
+          <button id="btn-get" class="ghost">Read</button>
+          <button id="btn-inc" class="ghost">Increment</button>
+          <button id="btn-list" class="ghost">List all</button>
+          <button id="btn-del" class="ghost">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h3>Response</h3>
+      <div class="out" id="out">Waiting for a request&hellip;</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ javascript ============ -->
+<section>
+  <div class="wrap">
+    <h2>Use it from JavaScript</h2>
+    <p class="lead">No dependencies. Drop this in and call the three functions.</p>
+
+    <pre class="code" data-copy>&lt;script&gt;
+const KV_BASE = "<span data-base></span>";
+
+async function getValue(appKey, key) {
+  const res = await fetch(`${KV_BASE}/api/KeyVal/GetValue/${appKey}/${key}`);
+  return res.ok ? res.json() : null;
+}
+
+async function updateValue(appKey, key, value) {
+  const res = await fetch(
+    `${KV_BASE}/api/KeyVal/UpdateValue/${appKey}/${key}/${encodeURIComponent(value)}`,
+    { method: "POST" });
+  return res.ok;
+}
+
+async function actOnValue(appKey, key, action) {   // "increment" | "decrement"
+  const res = await fetch(
+    `${KV_BASE}/api/KeyVal/ActOnValue/${appKey}/${key}/${action}`,
+    { method: "POST" });
+  return res.ok ? res.json() : null;
+}
+&lt;/script&gt;</pre>
+
+    <p class="note">
+      A visit counter is one line on page load: <code>actOnValue("3cg7aby9", "visits", "increment")</code>.
+      The key is created at zero the first time, so there is nothing to set up.
+    </p>
+  </div>
+</section>
+
+<!-- ============ api reference ============ -->
+<section>
+  <div class="wrap">
+    <h2>API reference</h2>
+    <p class="lead">
+      <span class="pill">v1</span> is the original API, unchanged and supported indefinitely.
+      <span class="pill">v2</span> adds listing, deleting, bigger values and richer responses.
+    </p>
+
+    <h3 style="margin-top:24px">v1 &mdash; unchanged since 2017</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/KeyVal/GetAppKey</td><td>Issue a new app key</td></tr>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/KeyVal/GetValue/{appkey}/{key}</td><td>Read a value, or <code>""</code></td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/KeyVal/UpdateValue/{appkey}/{key}/{value}</td><td>Create or overwrite</td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/KeyVal/ActOnValue/{appkey}/{key}/{action}</td><td><code>increment</code> or <code>decrement</code></td></tr>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/KeyVal/GetCount</td><td>Keys stored service-wide</td></tr>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/KeyVal/GetIp</td><td>Your IP as the server sees it</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:30px">v2 &mdash; recommended for new code</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/appkeys</td><td>Issue a new app key</td></tr>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}</td><td>Key count and timestamps</td></tr>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys</td><td>List everything you stored</td></tr>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Read one key with timestamps</td></tr>
+          <tr><td><span class="verb">PUT</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Set from a JSON body: <code>{"value":"..."}</code></td></tr>
+          <tr><td><span class="verb">DEL</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}</td><td>Remove a key</td></tr>
+          <tr><td><span class="verb">POST</span></td><td class="mono">/api/v2/appkeys/{appkey}/keys/{key}/increment</td><td>Step by <code>{"by":n}</code>, default 1</td></tr>
+          <tr><td><span class="verb">GET</span></td><td class="mono">/api/v2/stats</td><td>Service-wide totals</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note" style="margin-top:18px">
+      Sending the value in a JSON body means it can contain slashes, newlines and anything else a
+      URL path segment cannot carry. Machine-readable schema:
+      <a href="/openapi/v1.json"><code>/openapi/v1.json</code></a>.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Free to use, no warranty. Values are public to anyone holding the app key &mdash; don't store secrets.<br>
+    <a href="https://www.immanuel.co">immanuel.co</a> &middot; <a href="/health">status</a>
+  </div>
+</footer>
+
+<script>
+'use strict';
+
+const BASE = location.origin;
+const out = document.getElementById('out');
+const $ = id => document.getElementById(id);
+
+// Fill every <span data-base> in the code samples with the host this page is served from,
+// so copied snippets work whether that is keyvalue.immanuel.co or localhost.
+document.querySelectorAll('[data-base]').forEach(el => { el.textContent = BASE; });
+
+// ---------- copy buttons ----------
+document.querySelectorAll('[data-copy]').forEach(block => {
+  // Snapshot the snippet before the button becomes a child of the block, otherwise the
+  // button's own label would end up on the clipboard too.
+  const source = block.textContent.trim();
+
+  const btn = document.createElement('button');
+  btn.className = 'copy';
+  btn.type = 'button';
+  btn.textContent = 'Copy';
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(source);
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1400);
+    } catch {
+      btn.textContent = 'Press Ctrl+C';
+    }
+  });
+  block.appendChild(btn);
+});
+
+// ---------- output ----------
+function show(ok, title, body) {
+  const status = ok ? 'ok' : 'err';
+  const text = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
+  out.innerHTML = `<span class="${status}">${ok ? '✓' : '✗'} ${escapeHtml(title)}</span>\n\n${escapeHtml(text)}`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ---------- app key, remembered locally ----------
+const STORAGE_KEY = 'immanuel.keyvalue.appkey';
+try {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) $('appkey').value = saved;
+} catch { /* private browsing - not worth failing over */ }
+
+$('appkey').addEventListener('change', () => {
+  try { localStorage.setItem(STORAGE_KEY, $('appkey').value.trim()); } catch {}
+});
+
+function appKey() {
+  const value = $('appkey').value.trim();
+  if (!value) {
+    show(false, 'No app key yet', 'Press "Get app key" first.');
+    return null;
+  }
+  return value;
+}
+
+function keyName() {
+  const value = $('k').value.trim();
+  if (!value) {
+    show(false, 'No key given', 'Type a key name, for example "yourkey".');
+    return null;
+  }
+  return value;
+}
+
+// ---------- request helper ----------
+async function call(method, path, body) {
+  const options = { method };
+  if (body !== undefined) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(body);
+  }
+
+  const res = await fetch(BASE + path, options);
+  const text = await res.text();
+
+  let parsed = text;
+  try { parsed = text ? JSON.parse(text) : ''; } catch {}
+
+  return { ok: res.ok, status: res.status, body: parsed, label: `${method} ${path} → ${res.status}` };
+}
+
+async function run(fn) {
+  try {
+    const r = await fn();
+    if (r) show(r.ok, r.label, r.body === '' ? '(empty)' : r.body);
+  } catch (err) {
+    show(false, 'Request failed', String(err));
+  }
+}
+
+// ---------- buttons ----------
+$('btn-key').addEventListener('click', () => run(async () => {
+  const r = await call('POST', '/api/v2/appkeys');
+  if (r.ok && r.body && r.body.appKey) {
+    $('appkey').value = r.body.appKey;
+    try { localStorage.setItem(STORAGE_KEY, r.body.appKey); } catch {}
+  }
+  refreshStats();
+  return r;
+}));
+
+$('btn-set').addEventListener('click', () => run(async () => {
+  const a = appKey(), k = keyName();
+  if (!a || !k) return null;
+  const r = await call('PUT', `/api/v2/appkeys/${a}/keys/${encodeURIComponent(k)}`, { value: $('v').value });
+  refreshStats();
+  return r;
+}));
+
+$('btn-get').addEventListener('click', () => run(async () => {
+  const a = appKey(), k = keyName();
+  if (!a || !k) return null;
+  const r = await call('GET', `/api/v2/appkeys/${a}/keys/${encodeURIComponent(k)}`);
+  if (r.ok && r.body && r.body.value != null) $('v').value = r.body.value;
+  return r;
+}));
+
+$('btn-inc').addEventListener('click', () => run(async () => {
+  const a = appKey(), k = keyName();
+  if (!a || !k) return null;
+  const r = await call('POST', `/api/v2/appkeys/${a}/keys/${encodeURIComponent(k)}/increment`, { by: 1 });
+  if (r.ok && r.body && r.body.value != null) $('v').value = r.body.value;
+  refreshStats();
+  return r;
+}));
+
+$('btn-list').addEventListener('click', () => run(async () => {
+  const a = appKey();
+  if (!a) return null;
+  return call('GET', `/api/v2/appkeys/${a}/keys`);
+}));
+
+$('btn-del').addEventListener('click', () => run(async () => {
+  const a = appKey(), k = keyName();
+  if (!a || !k) return null;
+  const r = await call('DELETE', `/api/v2/appkeys/${a}/keys/${encodeURIComponent(k)}`);
+  refreshStats();
+  return { ...r, body: r.ok ? 'Deleted.' : r.body };
+}));
+
+// ---------- live stats ----------
+async function refreshStats() {
+  try {
+    const res = await fetch(BASE + '/api/v2/stats');
+    if (!res.ok) return;
+    const stats = await res.json();
+    $('stat-keys').textContent = stats.keys.toLocaleString();
+    $('stat-apps').textContent = stats.appKeys.toLocaleString();
+  } catch { /* the page is still perfectly usable without the counters */ }
+}
+
+refreshStats();
+</script>
+
+</body>
+</html>
