@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- Not a deployable artifact. It also references both Web and Migrator, and each ships its
+         own appsettings.json, so publishing it collides on that relative path (NETSDK1152). -->
+    <IsPublishable>false</IsPublishable>
   </PropertyGroup>
 
   <ItemGroup>
